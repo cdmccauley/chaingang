@@ -32,7 +32,7 @@ export default function Home(props) {
   }, [config]);
 
   useEffect(() => {
-    if (process.env.PUBLIC_VERCEL_ENV != "production" && clientId)
+    if (process.env.NEXT_PUBLIC_VERCEL_ENV != "production" && clientId)
       console.info(clientId);
   }, [clientId]);
 
