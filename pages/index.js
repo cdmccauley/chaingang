@@ -63,7 +63,13 @@ export default function Home(props) {
       </Head>
       <CssBaseline enableColorScheme />
       <Container
-        sx={{ display: "flex", justifyContent: "center", padding: "24px" }}
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          padding: "24px",
+          width: "100vw",
+          height: "100vh",
+        }}
       >
         <Image
           src="/android-chrome-512x512.png"
