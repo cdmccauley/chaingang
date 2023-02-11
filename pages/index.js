@@ -16,10 +16,10 @@ import theme from "../styles/theme";
 import clientPromise from "../lib/mongodb";
 
 import crypto from "crypto";
-import { Grid, Button } from "@mui/material";
 
-import { useConnectWallet, useAccountCenter } from "@web3-onboard/react";
-import { ethers } from "ethers";
+import { Container } from "@mui/material";
+
+import { useSession, signIn, signOut } from "next-auth/react";
 
 export default function Home(props) {
   const [{ wallet, connecting }, connect, disconnect] = useConnectWallet();
@@ -43,6 +43,7 @@ export default function Home(props) {
     if (signature) setSignature(null);
     if (verified) setVerified(false);
   };
+  const { data: session, status } = useSession();
 
   useEffect(() => {
     if (props.config) setConfig(JSON.parse(props.config));
@@ -64,6 +65,11 @@ export default function Home(props) {
       }
     }
   }, [wallet]);
+
+  useEffect(() => {
+    if (status === "authenticated") console.log("session", session);
+    if (status !== "authenticated") console.log(status);
+  }, [status]);
 
   useEffect(() => {
     if (signature) {
@@ -111,58 +117,28 @@ export default function Home(props) {
         <link rel="manifest" href="/site.webmanifest" />
       </Head>
       <CssBaseline enableColorScheme />
-
-      <Grid container spacing={2} justifyContent="center" sx={{ mt: 0.125 }}>
-        <Grid item xs={12} container justifyContent="center">
-          <Image
-            src="/android-chrome-512x512.png"
-            width={256}
-            height={256}
-            alt=""
-          />
-        </Grid>
-
-        <Grid item xs={12} container justifyContent="center">
-          <Button
-            disabled={props.connecting}
-            variant="outlined"
-            onClick={() => (wallet ? disconnectWallet() : connect())}
-          >
-            {connecting ? "connecting" : wallet ? "disconnect" : "connect"}
-          </Button>
-        </Grid>
-
-        {!wallet || signature !== null ? undefined : (
-          <Grid item xs={12} container justifyContent="center">
-            <Button
-              disabled={!wallet || signature !== null}
-              variant="outlined"
-              onClick={() =>
-                provider.getSigner().then((signer) =>
-                  signer
-                    .signMessage(`${config.message}${clientId}`)
-                    .then((sig) => setSignature(sig))
-                    .catch((e) => console.error(e))
-                )
-              }
-            >
-              Verify
-            </Button>
-          </Grid>
-        )}
-
-        {verified ? (
-          <Grid item xs={12} container justifyContent="center">
-            <Button
-              disabled={!verified}
-              variant="outlined"
-              onClick={() => console.log("Twitch")}
-            >
-              Twitch
-            </Button>
-          </Grid>
-        ) : undefined}
-      </Grid>
+      {status === "unauthenticated" ? (
+        <button onClick={() => signIn("twitch")}>Sign in with Twitch</button>
+      ) : undefined}
+      {status === "authenticated" ? (
+        <button onClick={() => signOut()}>Sign out</button>
+      ) : undefined}
+      <Container
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          padding: "24px",
+          width: "100vw",
+          height: "100vh",
+        }}
+      >
+        <Image
+          src="/android-chrome-512x512.png"
+          width={256}
+          height={256}
+          alt=""
+        />
+      </Container>
     </ThemeProvider>
   );
 }
