@@ -16,16 +16,26 @@ import theme from "../styles/theme";
 import clientPromise from "../lib/mongodb";
 
 import crypto from "crypto";
+
 import { Container } from "@mui/material";
+
+import { useSession, signIn, signOut } from "next-auth/react";
 
 export default function Home(props) {
   const [config, setConfig] = useState({ title: "", description: "" });
   const [clientId, setClientId] = useState("");
 
+  const { data: session, status } = useSession();
+
   useEffect(() => {
     if (props.config) setConfig(JSON.parse(props.config));
     if (props.clientId) setClientId(props.clientId);
   }, []);
+
+  useEffect(() => {
+    if (status === "authenticated") console.log("session", session);
+    if (status !== "authenticated") console.log(status);
+  }, [status]);
 
   useEffect(() => {
     if (config.fun) console.info(config.fun);
@@ -62,6 +72,12 @@ export default function Home(props) {
         <link rel="manifest" href="/site.webmanifest" />
       </Head>
       <CssBaseline enableColorScheme />
+      {status === "unauthenticated" ? (
+        <button onClick={() => signIn("twitch")}>Sign in with Twitch</button>
+      ) : undefined}
+      {status === "authenticated" ? (
+        <button onClick={() => signOut()}>Sign out</button>
+      ) : undefined}
       <Container
         sx={{
           display: "flex",
