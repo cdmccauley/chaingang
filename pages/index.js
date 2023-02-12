@@ -16,7 +16,7 @@ import theme from "../styles/theme";
 import clientPromise from "../lib/mongodb";
 
 import crypto from "crypto";
-import { Container, Grid, Button } from "@mui/material";
+import { Grid, Button } from "@mui/material";
 
 import { useConnectWallet, useAccountCenter } from "@web3-onboard/react";
 import { ethers } from "ethers";
@@ -35,10 +35,13 @@ export default function Home(props) {
   const [provider, setProvider] = useState(null);
   const [signature, setSignature] = useState(null);
 
+  const [verified, setVerified] = useState(false);
+
   const disconnectWallet = () => {
     if (wallet) disconnect(wallet);
     if (provider) setProvider(null);
     if (signature) setSignature(null);
+    if (verified) setVerified(false);
   };
 
   useEffect(() => {
@@ -63,7 +66,23 @@ export default function Home(props) {
   }, [wallet]);
 
   useEffect(() => {
-    if (signature) console.log("signature", signature);
+    if (signature) {
+      if (clientId !== "" && wallet && wallet.accounts[0].address) {
+        fetch("/api/client/signature", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: clientId,
+            address: wallet.accounts[0].address,
+            signature: signature,
+          }),
+        })
+          .then((res) => setVerified(res.ok))
+          .catch((e) => console.error(e));
+      }
+    }
   }, [signature]);
 
   return (
@@ -93,7 +112,7 @@ export default function Home(props) {
       </Head>
       <CssBaseline enableColorScheme />
 
-      <Grid container spacing={2} justifyContent="center" sx={{mt: .125}}>
+      <Grid container spacing={2} justifyContent="center" sx={{ mt: 0.125 }}>
         <Grid item xs={12} container justifyContent="center">
           <Image
             src="/android-chrome-512x512.png"
@@ -131,6 +150,18 @@ export default function Home(props) {
             </Button>
           </Grid>
         )}
+
+        {verified ? (
+          <Grid item xs={12} container justifyContent="center">
+            <Button
+              disabled={!verified}
+              variant="outlined"
+              onClick={() => console.log("Twitch")}
+            >
+              Twitch
+            </Button>
+          </Grid>
+        ) : undefined}
       </Grid>
     </ThemeProvider>
   );

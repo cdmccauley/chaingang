@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ambire/signature-validator": "^1.1.0",
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
     "@fontsource/roboto": "^4.5.8",
@@ -22,6 +23,7 @@
     "eslint": "8.31.0",
     "eslint-config-next": "13.1.1",
     "ethers": "^6.0.2",
+    "ethers5": "npm:ethers@^5.7.2",
     "mongodb": "^4.13.0",
     "next": "13.1.1",
     "react": "18.2.0",
