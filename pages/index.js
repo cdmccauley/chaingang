@@ -16,7 +16,7 @@ import theme from "../styles/theme";
 import clientPromise from "../lib/mongodb";
 
 import crypto from "crypto";
-import { Container, Button } from "@mui/material";
+import { Container, Grid, Button } from "@mui/material";
 
 import { useConnectWallet, useAccountCenter } from "@web3-onboard/react";
 import { ethers } from "ethers";
@@ -92,45 +92,46 @@ export default function Home(props) {
         <link rel="manifest" href="/site.webmanifest" />
       </Head>
       <CssBaseline enableColorScheme />
-      <Button
-        disabled={props.connecting}
-        variant="outlined"
-        onClick={() => (wallet ? disconnectWallet() : connect())}
-      >
-        {connecting ? "connecting" : wallet ? "disconnect" : "connect"}
-      </Button>
-      {!wallet || signature !== null ? undefined : (
-        <Button
-          disabled={!wallet || signature !== null}
-          variant="outlined"
-          onClick={() =>
-            provider.getSigner().then((signer) =>
-              signer
-                .signMessage(`${config.message}${clientId}`)
-                .then((sig) => setSignature(sig))
-                .catch((e) => console.error(e))
-            )
-          }
-        >
-          Verify
-        </Button>
-      )}
-      <Container
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          padding: "24px",
-          width: "100vw",
-          height: "100vh",
-        }}
-      >
-        <Image
-          src="/android-chrome-512x512.png"
-          width={256}
-          height={256}
-          alt=""
-        />
-      </Container>
+
+      <Grid container spacing={2} justifyContent="center" sx={{mt: .125}}>
+        <Grid item xs={12} container justifyContent="center">
+          <Image
+            src="/android-chrome-512x512.png"
+            width={256}
+            height={256}
+            alt=""
+          />
+        </Grid>
+
+        <Grid item xs={12} container justifyContent="center">
+          <Button
+            disabled={props.connecting}
+            variant="outlined"
+            onClick={() => (wallet ? disconnectWallet() : connect())}
+          >
+            {connecting ? "connecting" : wallet ? "disconnect" : "connect"}
+          </Button>
+        </Grid>
+
+        {!wallet || signature !== null ? undefined : (
+          <Grid item xs={12} container justifyContent="center">
+            <Button
+              disabled={!wallet || signature !== null}
+              variant="outlined"
+              onClick={() =>
+                provider.getSigner().then((signer) =>
+                  signer
+                    .signMessage(`${config.message}${clientId}`)
+                    .then((sig) => setSignature(sig))
+                    .catch((e) => console.error(e))
+                )
+              }
+            >
+              Verify
+            </Button>
+          </Grid>
+        )}
+      </Grid>
     </ThemeProvider>
   );
 }
