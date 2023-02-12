@@ -16,25 +16,55 @@ import theme from "../styles/theme";
 import clientPromise from "../lib/mongodb";
 
 import crypto from "crypto";
-import { Container } from "@mui/material";
+import { Container, Button } from "@mui/material";
+
+import { useConnectWallet, useAccountCenter } from "@web3-onboard/react";
+import { ethers } from "ethers";
 
 export default function Home(props) {
-  const [config, setConfig] = useState({ title: "", description: "" });
+  const [{ wallet, connecting }, connect, disconnect] = useConnectWallet();
+  const updateAccountCenter = useAccountCenter();
+
+  const [config, setConfig] = useState({
+    title: "",
+    description: "",
+    message: "",
+  });
   const [clientId, setClientId] = useState("");
+
+  const [provider, setProvider] = useState(null);
+  const [signature, setSignature] = useState(null);
+
+  const disconnectWallet = () => {
+    if (wallet) disconnect(wallet);
+    if (provider) setProvider(null);
+    if (signature) setSignature(null);
+  };
 
   useEffect(() => {
     if (props.config) setConfig(JSON.parse(props.config));
     if (props.clientId) setClientId(props.clientId);
+    updateAccountCenter({ enabled: false });
   }, []);
 
   useEffect(() => {
-    if (config.fun) console.info(config.fun);
-  }, [config]);
+    if (wallet && window.ethereum == null) {
+      setProvider(ethers.getDefaultProvider());
+    } else if (wallet) {
+      if (
+        (wallet.label && wallet.label === "MetaMask") ||
+        wallet.label === "GameStop Wallet"
+      ) {
+        setProvider(new ethers.BrowserProvider(window.ethereum));
+      } else if (wallet.label && wallet.label === "WalletConnect") {
+        setProvider(new ethers.BrowserProvider(wallet.provider));
+      }
+    }
+  }, [wallet]);
 
   useEffect(() => {
-    if (process.env.NEXT_PUBLIC_VERCEL_ENV != "production" && clientId)
-      console.info(clientId);
-  }, [clientId]);
+    if (signature) console.log("signature", signature);
+  }, [signature]);
 
   return (
     <ThemeProvider theme={theme}>
@@ -62,6 +92,29 @@ export default function Home(props) {
         <link rel="manifest" href="/site.webmanifest" />
       </Head>
       <CssBaseline enableColorScheme />
+      <Button
+        disabled={props.connecting}
+        variant="outlined"
+        onClick={() => (wallet ? disconnectWallet() : connect())}
+      >
+        {connecting ? "connecting" : wallet ? "disconnect" : "connect"}
+      </Button>
+      {!wallet || signature !== null ? undefined : (
+        <Button
+          disabled={!wallet || signature !== null}
+          variant="outlined"
+          onClick={() =>
+            provider.getSigner().then((signer) =>
+              signer
+                .signMessage(`${config.message}${clientId}`)
+                .then((sig) => setSignature(sig))
+                .catch((e) => console.error(e))
+            )
+          }
+        >
+          Verify
+        </Button>
+      )}
       <Container
         sx={{
           display: "flex",
@@ -86,12 +139,16 @@ export async function getServerSideProps(context) {
   try {
     const client = await clientPromise;
     const db = await client.db("frontend");
-    const collection = await db.collection("serversideprops");
-    const config = await collection.findOne({ name: "config" });
+    const serversideprops = await db.collection("serversideprops");
+    const clients = await db.collection("clients");
+
+    const config = await serversideprops.findOne({ name: "config" });
+
+    const expired = new Date().valueOf() - 8.64e7;
+    await clients.deleteMany({ created: { $lt: expired } });
 
     const clientId = crypto.randomUUID();
 
-    const clients = await db.collection("clients");
     await clients.insertOne({
       _id: clientId,
       created: new Date().valueOf(),
