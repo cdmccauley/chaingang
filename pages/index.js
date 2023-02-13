@@ -17,7 +17,10 @@ import clientPromise from "../lib/mongodb";
 
 import crypto from "crypto";
 
-import { Container } from "@mui/material";
+import { Grid, Button, Paper, Typography } from "@mui/material";
+
+import { useConnectWallet, useAccountCenter } from "@web3-onboard/react";
+import { ethers } from "ethers";
 
 import { useSession, signIn, signOut } from "next-auth/react";
 
@@ -29,10 +32,12 @@ export default function Home(props) {
     title: "",
     description: "",
     message: "",
+    finalize: "",
   });
   const [clientId, setClientId] = useState("");
 
   const [provider, setProvider] = useState(null);
+  const [message, setMessage] = useState("");
   const [signature, setSignature] = useState(null);
 
   const [verified, setVerified] = useState(false);
@@ -40,9 +45,11 @@ export default function Home(props) {
   const disconnectWallet = () => {
     if (wallet) disconnect(wallet);
     if (provider) setProvider(null);
+    if (message) setMessage("");
     if (signature) setSignature(null);
     if (verified) setVerified(false);
   };
+
   const { data: session, status } = useSession();
 
   useEffect(() => {
@@ -50,6 +57,16 @@ export default function Home(props) {
     if (props.clientId) setClientId(props.clientId);
     updateAccountCenter({ enabled: false });
   }, []);
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      if (message !== `${config.message}${session.user.name}\n${clientId}`)
+        setMessage(`${config.message}${session.user.name}\n${clientId}`);
+    } else {
+      if (message !== `${config.message}${clientId}`)
+        setMessage(`${config.message}${clientId}`);
+    }
+  }, [status]);
 
   useEffect(() => {
     if (wallet && window.ethereum == null) {
@@ -65,11 +82,6 @@ export default function Home(props) {
       }
     }
   }, [wallet]);
-
-  useEffect(() => {
-    if (status === "authenticated") console.log("session", session);
-    if (status !== "authenticated") console.log(status);
-  }, [status]);
 
   useEffect(() => {
     if (signature) {
@@ -117,28 +129,91 @@ export default function Home(props) {
         <link rel="manifest" href="/site.webmanifest" />
       </Head>
       <CssBaseline enableColorScheme />
-      {status === "unauthenticated" ? (
-        <button onClick={() => signIn("twitch")}>Sign in with Twitch</button>
-      ) : undefined}
-      {status === "authenticated" ? (
-        <button onClick={() => signOut()}>Sign out</button>
-      ) : undefined}
-      <Container
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          padding: "24px",
-          width: "100vw",
-          height: "100vh",
-        }}
-      >
-        <Image
-          src="/android-chrome-512x512.png"
-          width={256}
-          height={256}
-          alt=""
-        />
-      </Container>
+
+      <Grid container spacing={2} justifyContent="center" sx={{ mt: 0.125 }}>
+        <Grid item xs={12} container justifyContent="center">
+          <Image
+            src="/android-chrome-512x512.png"
+            width={256}
+            height={256}
+            alt=""
+          />
+        </Grid>
+
+        {status === "authenticated" &&
+        !wallet &&
+        new URLSearchParams(window.location.search)
+          .get("id")
+          ?.match(
+            /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i
+          ) &&
+        config.finalize !== "" ? (
+          <Grid item xs={12} container justifyContent="center">
+            <Paper
+              elevation={3}
+              sx={{ p: 2, maxWidth: "256px", backgroundColor: "#4b0082" }}
+            >
+              <Typography>{config.finalize}</Typography>
+            </Paper>
+          </Grid>
+        ) : undefined}
+
+        <Grid item xs={12} container justifyContent="center">
+          <Button
+            disabled={props.connecting}
+            variant="outlined"
+            onClick={() => (wallet ? disconnectWallet() : connect())}
+          >
+            {connecting ? "connecting" : wallet ? "disconnect" : "connect"}
+          </Button>
+        </Grid>
+
+        {!wallet || signature !== null ? undefined : (
+          <Grid item xs={12} container justifyContent="center">
+            <Button
+              disabled={!wallet || signature !== null}
+              variant="outlined"
+              onClick={() =>
+                provider.getSigner().then((signer) =>
+                  signer
+                    .signMessage(message)
+                    .then((sig) => setSignature(sig))
+                    .catch((e) => console.error(e))
+                )
+              }
+            >
+              Verify
+            </Button>
+          </Grid>
+        )}
+
+        {verified || status === "authenticated" ? (
+          <Grid item xs={12} container justifyContent="center">
+            <Button
+              disabled={!verified}
+              variant="outlined"
+              onClick={() =>
+                status === "unauthenticated"
+                  ? signIn("twitch", {
+                      callbackUrl:
+                        process.env.VERCEL_ENV == "production"
+                          ? `https://${process.env.NEXT_PUBLIC_PROD_HOST}/?id=${clientId}`
+                          : `http://localhost:3000/?id=${clientId}`,
+                    })
+                  : status === "authenticated"
+                  ? signOut("twitch")
+                  : console.error("unexpected error")
+              }
+            >
+              {status === "unauthenticated"
+                ? "Twitch Sign In"
+                : status === "authenticated"
+                ? "Twitch Sign Out"
+                : "Twitch"}
+            </Button>
+          </Grid>
+        ) : undefined}
+      </Grid>
     </ThemeProvider>
   );
 }
@@ -155,12 +230,39 @@ export async function getServerSideProps(context) {
     const expired = new Date().valueOf() - 8.64e7;
     await clients.deleteMany({ created: { $lt: expired } });
 
-    const clientId = crypto.randomUUID();
+    let clientId;
 
-    await clients.insertOne({
-      _id: clientId,
-      created: new Date().valueOf(),
-    });
+    if (
+      context.query &&
+      context.query.id &&
+      context.query.id.match(
+        /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i
+      )
+    ) {
+      const clientWallets = await db.collection("clientWallets");
+      const clientSessions = await db.collection("clientSessions");
+
+      const existingClient = await clients.findOne({ _id: context.query.id });
+      const existingClientWallet = await clientWallets.findOne({
+        _id: context.query.id,
+      });
+      const existingClientSession = await clientSessions.findOne({
+        _id: context.query.id,
+      });
+
+      if (existingClient && existingClientWallet && !existingClientSession) {
+        clientId = context.query.id;
+      }
+    }
+
+    if (!clientId) {
+      clientId = crypto.randomUUID();
+
+      await clients.insertOne({
+        _id: clientId,
+        created: new Date().valueOf(),
+      });
+    }
 
     return {
       props: {

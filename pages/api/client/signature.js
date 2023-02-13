@@ -8,7 +8,12 @@ const provider = new ethers5.providers.JsonRpcProvider(
   `https://mainnet.infura.io/v3/${process.env.NEXT_PUBLIC_INFURA_KEY}`
 );
 
+import { authOptions } from "../../api/auth/[...nextauth]";
+import { getServerSession } from "next-auth/next";
+
 export default async function handler(req, res) {
+  const session = await getServerSession(req, res, authOptions);
+
   const INTERNAL_SERVER_ERROR = 500;
   const CREATED = 201;
   const BAD_REQUEST = 400;
@@ -30,12 +35,14 @@ export default async function handler(req, res) {
       const database = await client.db("frontend");
       const clients = await database.collection("clients");
       const clientWallets = await database.collection("clientWallets");
+      const clientSessions = await database.collection("clientSessions");
 
       const now = new Date().valueOf();
       const expired = now - 8.64e7;
 
       await clients.deleteMany({ created: { $lt: expired } });
       await clientWallets.deleteMany({ created: { $lt: expired } });
+      await clientSessions.deleteMany({ created: { $lt: expired }})
 
       const existingClient = await clients.findOne({
         _id: req.body.id,
@@ -45,7 +52,9 @@ export default async function handler(req, res) {
         const serversideprops = await database.collection("serversideprops");
 
         const config = await serversideprops.findOne({ name: "config" });
-        const message = `${config.message}${req.body.id}`;
+        const message = session
+          ? `${config.message}${session.user.name}\n${req.body.id}`
+          : `${config.message}${req.body.id}`;
 
         const verified = await verifyMessage({
           signer: req.body.address,
@@ -54,7 +63,23 @@ export default async function handler(req, res) {
           provider,
         });
 
-        if (verified) {
+        if (verified && session) {
+          await clientSessions.updateOne(
+            { _id: req.body.id },
+            {
+              $set: {
+                address: req.body.address,
+                twitch: session,
+                created: new Date().valueOf(),
+              },
+            },
+            { upsert: true }
+          );
+
+          // commit combination
+
+          code = CREATED;
+        } else if (verified) {
           await clientWallets.updateOne(
             { _id: req.body.id },
             {
