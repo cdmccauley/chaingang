@@ -196,7 +196,7 @@ export default function Home(props) {
                 status === "unauthenticated"
                   ? signIn("twitch", {
                       callbackUrl:
-                        process.env.VERCEL_ENV == "production"
+                        process.env.NEXT_PUBLIC_VERCEL_ENV == "production"
                           ? `https://${process.env.NEXT_PUBLIC_PROD_HOST}/?id=${clientId}`
                           : `http://localhost:3000/?id=${clientId}`,
                     })
