@@ -222,7 +222,7 @@ export async function getServerSideProps(context) {
   try {
     const cookies = context.req.headers.cookie;
     const clientCsrfToken = cookies
-      ? cookie.parse(cookies)["next-auth.csrf-token"].split("|")[0]
+      ? cookie.parse(cookies)["next-auth.csrf-token"]?.split("|")[0]
       : undefined;
 
     const client = await clientPromise;
