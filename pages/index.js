@@ -24,6 +24,8 @@ import { ethers } from "ethers";
 
 import { useSession, signIn, signOut } from "next-auth/react";
 
+import * as cookie from "cookie";
+
 export default function Home(props) {
   const [{ wallet, connecting }, connect, disconnect] = useConnectWallet();
   const updateAccountCenter = useAccountCenter();
@@ -140,14 +142,7 @@ export default function Home(props) {
           />
         </Grid>
 
-        {status === "authenticated" &&
-        !wallet &&
-        new URLSearchParams(window.location.search)
-          .get("id")
-          ?.match(
-            /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i
-          ) &&
-        config.finalize !== "" ? (
+        {status === "authenticated" ? (
           <Grid item xs={12} container justifyContent="center">
             <Paper
               elevation={3}
@@ -196,12 +191,17 @@ export default function Home(props) {
                 status === "unauthenticated"
                   ? signIn("twitch", {
                       callbackUrl:
-                        process.env.NEXT_PUBLIC_VERCEL_ENV == "production"
+                        process.env.NEXT_PUBLIC_VERCEL_ENV === "production"
                           ? `https://${process.env.NEXT_PUBLIC_PROD_HOST}/?id=${clientId}`
                           : `http://localhost:3000/?id=${clientId}`,
                     })
                   : status === "authenticated"
-                  ? signOut("twitch")
+                  ? signOut("twitch", {
+                      callbackUrl:
+                        process.env.NEXT_PUBLIC_VERCEL_ENV === "production"
+                          ? `https://${process.env.NEXT_PUBLIC_PROD_HOST}/?id=${clientId}`
+                          : `http://localhost:3000/?id=${clientId}`,
+                    })
                   : console.error("unexpected error")
               }
             >
@@ -220,6 +220,11 @@ export default function Home(props) {
 
 export async function getServerSideProps(context) {
   try {
+    const cookies = context.req.headers.cookie;
+    const clientCsrfToken = cookie
+      .parse(cookies)
+      ["next-auth.csrf-token"].split("|")[0];
+
     const client = await clientPromise;
     const db = await client.db("frontend");
     const serversideprops = await db.collection("serversideprops");
@@ -232,34 +237,18 @@ export async function getServerSideProps(context) {
 
     let clientId;
 
-    if (
-      context.query &&
-      context.query.id &&
-      context.query.id.match(
-        /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i
-      )
-    ) {
-      const clientWallets = await db.collection("clientWallets");
-      const clientSessions = await db.collection("clientSessions");
+    const existingClient = await clients.findOne({
+      csrfToken: clientCsrfToken,
+    });
 
-      const existingClient = await clients.findOne({ _id: context.query.id });
-      const existingClientWallet = await clientWallets.findOne({
-        _id: context.query.id,
-      });
-      const existingClientSession = await clientSessions.findOne({
-        _id: context.query.id,
-      });
-
-      if (existingClient && existingClientWallet && !existingClientSession) {
-        clientId = context.query.id;
-      }
-    }
+    if (existingClient) clientId = existingClient._id;
 
     if (!clientId) {
       clientId = crypto.randomUUID();
 
       await clients.insertOne({
         _id: clientId,
+        csrfToken: clientCsrfToken,
         created: new Date().valueOf(),
       });
     }
