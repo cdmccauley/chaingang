@@ -221,9 +221,9 @@ export default function Home(props) {
 export async function getServerSideProps(context) {
   try {
     const cookies = context.req.headers.cookie;
-    const clientCsrfToken = cookie
-      .parse(cookies)
-      ["next-auth.csrf-token"].split("|")[0];
+    const clientCsrfToken = cookies
+      ? cookie.parse(cookies)["next-auth.csrf-token"].split("|")[0]
+      : undefined;
 
     const client = await clientPromise;
     const db = await client.db("frontend");
@@ -237,9 +237,12 @@ export async function getServerSideProps(context) {
 
     let clientId;
 
-    const existingClient = await clients.findOne({
-      csrfToken: clientCsrfToken,
-    });
+    let existingClient;
+
+    if (clientCsrfToken)
+      existingClient = await clients.findOne({
+        csrfToken: clientCsrfToken,
+      });
 
     if (existingClient) clientId = existingClient._id;
 
@@ -248,7 +251,7 @@ export async function getServerSideProps(context) {
 
       await clients.insertOne({
         _id: clientId,
-        csrfToken: clientCsrfToken,
+        csrfToken: clientCsrfToken ? clientCsrfToken : undefined,
         created: new Date().valueOf(),
       });
     }
