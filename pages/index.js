@@ -23,6 +23,8 @@ import { useConnectWallet, useAccountCenter } from "@web3-onboard/react";
 import { ethers } from "ethers";
 
 import { useSession, signIn, signOut } from "next-auth/react";
+import { authOptions } from "../pages/api/auth/[...nextauth]";
+import { getServerSession } from "next-auth/next";
 
 import * as cookie from "cookie";
 
@@ -34,6 +36,8 @@ export default function Home(props) {
     title: "",
     description: "",
     message: "",
+    initiate: "",
+    sign: "",
     finalize: "",
   });
   const [clientId, setClientId] = useState("");
@@ -142,16 +146,28 @@ export default function Home(props) {
           />
         </Grid>
 
-        {status === "authenticated" ? (
-          <Grid item xs={12} container justifyContent="center">
-            <Paper
-              elevation={3}
-              sx={{ p: 2, maxWidth: "256px", backgroundColor: "#4b0082" }}
-            >
-              <Typography>{config.finalize}</Typography>
-            </Paper>
-          </Grid>
-        ) : undefined}
+        <Grid item xs={12} container justifyContent="center">
+          <Paper
+            elevation={3}
+            sx={{ p: 2, maxWidth: "256px", backgroundColor: "#4b0082" }}
+          >
+            <Typography>
+              {status !== "authenticated" && !wallet
+                ? config.initiate
+                : status !== "authenticated" && wallet && !verified
+                ? config.sign
+                : status !== "authenticated" && wallet && verified
+                ? config.signin
+                : status === "authenticated" && !wallet
+                ? config.finalize
+                : status === "authenticated" && wallet && !verified
+                ? config.sign
+                : status === "authenticated" && wallet && verified
+                ? config.signout
+                : "error"}
+            </Typography>
+          </Paper>
+        </Grid>
 
         <Grid item xs={12} container justifyContent="center">
           <Button
@@ -208,7 +224,7 @@ export default function Home(props) {
               {status === "unauthenticated"
                 ? "Twitch Sign In"
                 : status === "authenticated"
-                ? "Twitch Sign Out"
+                ? "Sign Out"
                 : "Twitch"}
             </Button>
           </Grid>
@@ -220,38 +236,56 @@ export default function Home(props) {
 
 export async function getServerSideProps(context) {
   try {
+    // get config
+    const mongo = await clientPromise;
+    const frontend = await mongo.db("frontend");
+    const serversideprops = await frontend.collection("serversideprops");
+    const config = await serversideprops.findOne({ name: "config" });
+
+    // get/maintain clients
+    const clients = await frontend.collection("clients");
+    const expired = new Date().valueOf() - 8.64e7;
+    await clients.deleteMany({ created: { $lt: expired } });
+
+    // start checks for clientId
+    let clientId;
+
+    // get csrf-token
     const cookies = context.req.headers.cookie;
     const clientCsrfToken = cookies
       ? cookie.parse(cookies)["next-auth.csrf-token"]?.split("|")[0]
       : undefined;
 
-    const client = await clientPromise;
-    const db = await client.db("frontend");
-    const serversideprops = await db.collection("serversideprops");
-    const clients = await db.collection("clients");
+    // get session
+    const session = await getServerSession(
+      context.req,
+      context.res,
+      authOptions
+    );
 
-    const config = await serversideprops.findOne({ name: "config" });
+    // if csrf-token and session, likely return from login
+    const isLoginReturn =
+      clientCsrfToken && session
+        ? new Date(session.expires).valueOf() > new Date().valueOf()
+        : false;
 
-    const expired = new Date().valueOf() - 8.64e7;
-    await clients.deleteMany({ created: { $lt: expired } });
-
-    let clientId;
-
+    // start checks for existing clientID
     let existingClient;
 
-    if (clientCsrfToken)
+    // if likely return from login, we want to know clientId
+    if (isLoginReturn)
       existingClient = await clients.findOne({
         csrfToken: clientCsrfToken,
       });
 
     if (existingClient) clientId = existingClient._id;
 
+    // if not likely return from login or not found, give a new id
     if (!clientId) {
       clientId = crypto.randomUUID();
 
       await clients.insertOne({
         _id: clientId,
-        csrfToken: clientCsrfToken ? clientCsrfToken : undefined,
         created: new Date().valueOf(),
       });
     }
