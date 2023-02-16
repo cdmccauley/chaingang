@@ -15,18 +15,12 @@ import theme from "../styles/theme";
 
 import clientPromise from "../lib/mongodb";
 
-import crypto from "crypto";
-
 import { Grid, Button, Paper, Typography } from "@mui/material";
 
 import { useConnectWallet, useAccountCenter } from "@web3-onboard/react";
 import { ethers } from "ethers";
 
 import { useSession, signIn, signOut } from "next-auth/react";
-import { authOptions } from "../pages/api/auth/[...nextauth]";
-import { getServerSession } from "next-auth/next";
-
-import * as cookie from "cookie";
 
 export default function Home(props) {
   const [{ wallet, connecting }, connect, disconnect] = useConnectWallet();
@@ -36,9 +30,10 @@ export default function Home(props) {
     title: "",
     description: "",
     message: "",
-    initiate: "",
-    sign: "",
-    finalize: "",
+    signin: "",
+    connect: "",
+    verify: "",
+    verified: "",
   });
 
   const [provider, setProvider] = useState(null);
@@ -149,6 +144,8 @@ export default function Home(props) {
                 : status === "authenticated"
                 ? !wallet
                   ? config.connect
+                  : signature && !verified
+                  ? "Verifying..."
                   : !verified
                   ? config.verify
                   : verified
@@ -232,13 +229,6 @@ export async function getServerSideProps(context) {
     const frontend = await mongo.db("frontend");
     const serversideprops = await frontend.collection("serversideprops");
     const config = await serversideprops.findOne({ name: "config" });
-
-    // get session
-    const session = await getServerSession(
-      context.req,
-      context.res,
-      authOptions
-    );
 
     return {
       props: {
