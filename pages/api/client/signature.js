@@ -15,46 +15,33 @@ export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
 
   const INTERNAL_SERVER_ERROR = 500;
+  const UNAUTHORIZED = 401;
   const CREATED = 201;
+  const NOT_FOUND = 404;
   const BAD_REQUEST = 400;
 
-  let code = INTERNAL_SERVER_ERROR;
+  let code = UNAUTHORIZED;
 
   try {
     if (
+      session &&
       req.method === "POST" &&
-      req.body.id &&
-      req.body.id.match(
-        /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i
-      ) &&
       req.body.address &&
       isAddress(req.body.address) &&
       req.body.signature
     ) {
-      const client = await clientPromise;
-      const database = await client.db("frontend");
-      const clients = await database.collection("clients");
-      const clientWallets = await database.collection("clientWallets");
-      const clientSessions = await database.collection("clientSessions");
+      const mongo = await clientPromise;
+      const frontend = await mongo.db("frontend");
 
-      const now = new Date().valueOf();
-      const expired = now - 8.64e7;
-
-      await clients.deleteMany({ created: { $lt: expired } });
-      await clientWallets.deleteMany({ created: { $lt: expired } });
-      await clientSessions.deleteMany({ created: { $lt: expired }})
-
-      const existingClient = await clients.findOne({
-        _id: req.body.id,
+      const participants = await frontend.collection("participants");
+      const participant = await participants.findOne({
+        id: session.id,
       });
 
-      if (existingClient && now > existingClient.created + 1000) {
-        const serversideprops = await database.collection("serversideprops");
-
+      if (participant) {
+        const serversideprops = await frontend.collection("serversideprops");
         const config = await serversideprops.findOne({ name: "config" });
-        const message = session
-          ? `${config.message}${session.user.name}\n${req.body.id}`
-          : `${config.message}${req.body.id}`;
+        const message = `${config.message}${participant.name}\n${participant.email}\n\n${participant.nonce}`;
 
         const verified = await verifyMessage({
           signer: req.body.address,
@@ -63,44 +50,36 @@ export default async function handler(req, res) {
           provider,
         });
 
-        if (verified && session) {
-          await clientSessions.updateOne(
-            { _id: req.body.id },
+        if (verified) {
+          await participants.updateOne(
+            {
+              id: session.id,
+              name: session.session.user.name,
+              email: session.session.user.email,
+            },
             {
               $set: {
                 address: req.body.address,
                 twitch: session,
-                created: new Date().valueOf(),
-              },
-            },
-            { upsert: true }
-          );
-
-          // commit combination
-
-          code = CREATED;
-        } else if (verified) {
-          await clientWallets.updateOne(
-            { _id: req.body.id },
-            {
-              $set: {
-                address: req.body.address,
-                created: new Date().valueOf(),
+                updated: new Date().valueOf(),
               },
             },
             { upsert: true }
           );
 
           code = CREATED;
+        } else {
+          code = NOT_FOUND;
         }
       } else {
-        code = BAD_REQUEST;
+        code = UNAUTHORIZED;
       }
     } else {
       code = BAD_REQUEST;
     }
   } catch (e) {
     console.error("API/CLIENT/SIGNATURE ERROR", e);
+    code = INTERNAL_SERVER_ERROR;
   } finally {
     res.status(code).send();
   }

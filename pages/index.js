@@ -40,7 +40,6 @@ export default function Home(props) {
     sign: "",
     finalize: "",
   });
-  const [clientId, setClientId] = useState("");
 
   const [provider, setProvider] = useState(null);
   const [message, setMessage] = useState("");
@@ -60,30 +59,24 @@ export default function Home(props) {
 
   useEffect(() => {
     if (props.config) setConfig(JSON.parse(props.config));
-    if (props.clientId) setClientId(props.clientId);
     updateAccountCenter({ enabled: false });
   }, []);
 
   useEffect(() => {
-    if (status === "authenticated") {
-      if (message !== `${config.message}${session.user.name}\n${clientId}`)
-        setMessage(`${config.message}${session.user.name}\n${clientId}`);
-    } else {
-      if (message !== `${config.message}${clientId}`)
-        setMessage(`${config.message}${clientId}`);
+    if (session) {
+      setMessage(
+        `${config.message}${session.session.user.name}\n${session.session.user.email}\n\n${session.id}`
+      );
     }
-  }, [status]);
+  }, [session]);
 
   useEffect(() => {
     if (wallet && window.ethereum == null) {
       setProvider(ethers.getDefaultProvider());
     } else if (wallet) {
-      if (
-        (wallet.label && wallet.label === "MetaMask") ||
-        wallet.label === "GameStop Wallet"
-      ) {
+      if (wallet?.label === "MetaMask" || wallet?.label === "GameStop Wallet") {
         setProvider(new ethers.BrowserProvider(window.ethereum));
-      } else if (wallet.label && wallet.label === "WalletConnect") {
+      } else if (wallet?.label === "WalletConnect") {
         setProvider(new ethers.BrowserProvider(wallet.provider));
       }
     }
@@ -91,14 +84,13 @@ export default function Home(props) {
 
   useEffect(() => {
     if (signature) {
-      if (clientId !== "" && wallet && wallet.accounts[0].address) {
+      if (wallet?.accounts[0].address) {
         fetch("/api/client/signature", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            id: clientId,
             address: wallet.accounts[0].address,
             signature: signature,
           }),
@@ -152,37 +144,27 @@ export default function Home(props) {
             sx={{ p: 2, maxWidth: "256px", backgroundColor: "#4b0082" }}
           >
             <Typography>
-              {status !== "authenticated" && !wallet
-                ? config.initiate
-                : status !== "authenticated" && wallet && !verified
-                ? config.sign
-                : status !== "authenticated" && wallet && verified
+              {status === "unauthenticated"
                 ? config.signin
-                : status === "authenticated" && !wallet
-                ? config.finalize
-                : status === "authenticated" && wallet && !verified
-                ? config.sign
-                : status === "authenticated" && wallet && verified
-                ? config.signout
-                : "error"}
+                : status === "authenticated"
+                ? !wallet
+                  ? config.connect
+                  : !verified
+                  ? config.verify
+                  : verified
+                  ? config.verified
+                  : undefined
+                : undefined}
             </Typography>
           </Paper>
         </Grid>
 
-        <Grid item xs={12} container justifyContent="center">
-          <Button
-            disabled={props.connecting}
-            variant="outlined"
-            onClick={() => (wallet ? disconnectWallet() : connect())}
-          >
-            {connecting ? "connecting" : wallet ? "disconnect" : "connect"}
-          </Button>
-        </Grid>
-
-        {!wallet || signature !== null ? undefined : (
+        {!verified &&
+        status === "authenticated" &&
+        wallet &&
+        signature !== "" ? (
           <Grid item xs={12} container justifyContent="center">
             <Button
-              disabled={!wallet || signature !== null}
               variant="outlined"
               onClick={() =>
                 provider.getSigner().then((signer) =>
@@ -196,39 +178,48 @@ export default function Home(props) {
               Verify
             </Button>
           </Grid>
-        )}
+        ) : undefined}
 
-        {verified || status === "authenticated" ? (
+        {status === "authenticated" ? (
           <Grid item xs={12} container justifyContent="center">
             <Button
-              disabled={!verified}
+              disabled={props.connecting}
               variant="outlined"
-              onClick={() =>
-                status === "unauthenticated"
-                  ? signIn("twitch", {
-                      callbackUrl:
-                        process.env.NEXT_PUBLIC_VERCEL_ENV === "production"
-                          ? `https://${process.env.NEXT_PUBLIC_PROD_HOST}/?id=${clientId}`
-                          : `http://localhost:3000/?id=${clientId}`,
-                    })
-                  : status === "authenticated"
-                  ? signOut("twitch", {
-                      callbackUrl:
-                        process.env.NEXT_PUBLIC_VERCEL_ENV === "production"
-                          ? `https://${process.env.NEXT_PUBLIC_PROD_HOST}/?id=${clientId}`
-                          : `http://localhost:3000/?id=${clientId}`,
-                    })
-                  : console.error("unexpected error")
-              }
+              onClick={() => (wallet ? disconnectWallet() : connect())}
             >
-              {status === "unauthenticated"
-                ? "Twitch Sign In"
-                : status === "authenticated"
-                ? "Sign Out"
-                : "Twitch"}
+              {connecting ? "connecting" : wallet ? "disconnect" : "connect"}
             </Button>
           </Grid>
         ) : undefined}
+
+        <Grid item xs={12} container justifyContent="center">
+          <Button
+            variant="outlined"
+            onClick={() =>
+              status === "unauthenticated"
+                ? signIn("twitch", {
+                    callbackUrl:
+                      process.env.NEXT_PUBLIC_VERCEL_ENV === "production"
+                        ? `https://${process.env.NEXT_PUBLIC_PROD_HOST}/`
+                        : `http://localhost:3000/`,
+                  })
+                : status === "authenticated"
+                ? signOut("twitch", {
+                    callbackUrl:
+                      process.env.NEXT_PUBLIC_VERCEL_ENV === "production"
+                        ? `https://${process.env.NEXT_PUBLIC_PROD_HOST}/`
+                        : `http://localhost:3000/`,
+                  })
+                : console.error("unexpected error")
+            }
+          >
+            {status === "unauthenticated"
+              ? "Connect Twitch"
+              : status === "authenticated"
+              ? "Disconnect Twitch"
+              : "Twitch"}
+          </Button>
+        </Grid>
       </Grid>
     </ThemeProvider>
   );
@@ -242,20 +233,6 @@ export async function getServerSideProps(context) {
     const serversideprops = await frontend.collection("serversideprops");
     const config = await serversideprops.findOne({ name: "config" });
 
-    // get/maintain clients
-    const clients = await frontend.collection("clients");
-    const expired = new Date().valueOf() - 8.64e7;
-    await clients.deleteMany({ created: { $lt: expired } });
-
-    // start checks for clientId
-    let clientId;
-
-    // get csrf-token
-    const cookies = context.req.headers.cookie;
-    const clientCsrfToken = cookies
-      ? cookie.parse(cookies)["next-auth.csrf-token"]?.split("|")[0]
-      : undefined;
-
     // get session
     const session = await getServerSession(
       context.req,
@@ -263,38 +240,10 @@ export async function getServerSideProps(context) {
       authOptions
     );
 
-    // if csrf-token and session, likely return from login
-    const isLoginReturn =
-      clientCsrfToken && session
-        ? new Date(session.expires).valueOf() > new Date().valueOf()
-        : false;
-
-    // start checks for existing clientID
-    let existingClient;
-
-    // if likely return from login, we want to know clientId
-    if (isLoginReturn)
-      existingClient = await clients.findOne({
-        csrfToken: clientCsrfToken,
-      });
-
-    if (existingClient) clientId = existingClient._id;
-
-    // if not likely return from login or not found, give a new id
-    if (!clientId) {
-      clientId = crypto.randomUUID();
-
-      await clients.insertOne({
-        _id: clientId,
-        created: new Date().valueOf(),
-      });
-    }
-
     return {
       props: {
         isConnected: true,
         config: JSON.stringify(config),
-        clientId: clientId,
       },
     };
   } catch (e) {
