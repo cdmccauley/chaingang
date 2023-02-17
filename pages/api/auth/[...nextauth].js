@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import TwitchProvider from "next-auth/providers/twitch";
+import DiscordProvider from "next-auth/providers/discord";
 
 import clientPromise from "../../../lib/mongodb";
 
@@ -7,6 +8,10 @@ import crypto from "crypto";
 
 export const authOptions = {
   providers: [
+    DiscordProvider({
+      clientId: process.env.DISCORD_CLIENT_ID,
+      clientSecret: process.env.DISCORD_CLIENT_SECRET
+    }),
     TwitchProvider({
       clientId: process.env.TWITCH_CLIENT_ID,
       clientSecret: process.env.TWITCH_CLIENT_SECRET,

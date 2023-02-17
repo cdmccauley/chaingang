@@ -96,6 +96,32 @@ export default function Home(props) {
     }
   }, [signature]);
 
+  const popupCenter = (url, title) => {
+    const dualScreenLeft = window.screenLeft ?? window.screenX;
+    const dualScreenTop = window.screenTop ?? window.screenY;
+
+    const width =
+      window.innerWidth ?? document.documentElement.clientWidth ?? screen.width;
+
+    const height =
+      window.innerHeight ??
+      document.documentElement.clientHeight ??
+      screen.height;
+
+    const systemZoom = width / window.screen.availWidth;
+
+    const left = (width - 500) / 2 / systemZoom + dualScreenLeft;
+    const top = (height - 650) / 2 / systemZoom + dualScreenTop;
+
+    const newWindow = window.open(
+      url,
+      title,
+      `location=0,toolbar=0,width=500,height=500,top=${top},left=${left}`
+    );
+
+    newWindow?.focus();
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <Head>
@@ -194,27 +220,17 @@ export default function Home(props) {
             variant="outlined"
             onClick={() =>
               status === "unauthenticated"
-                ? signIn("twitch", {
-                    callbackUrl:
-                      process.env.NEXT_PUBLIC_VERCEL_ENV === "production"
-                        ? `https://${process.env.NEXT_PUBLIC_PROD_HOST}/`
-                        : `http://localhost:3000/`,
-                  })
+                ? popupCenter("/signin", "Sign In")
                 : status === "authenticated"
-                ? signOut("twitch", {
-                    callbackUrl:
-                      process.env.NEXT_PUBLIC_VERCEL_ENV === "production"
-                        ? `https://${process.env.NEXT_PUBLIC_PROD_HOST}/`
-                        : `http://localhost:3000/`,
-                  })
+                ? signOut()
                 : console.error("unexpected error")
             }
           >
             {status === "unauthenticated"
-              ? "Connect Twitch"
+              ? "Sign In"
               : status === "authenticated"
-              ? "Disconnect Twitch"
-              : "Twitch"}
+              ? "Sign Out"
+              : "..."}
           </Button>
         </Grid>
       </Grid>
