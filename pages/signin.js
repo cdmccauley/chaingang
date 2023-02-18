@@ -14,17 +14,15 @@ import clientPromise from "../lib/mongodb";
 
 import { useSession, signIn } from "next-auth/react";
 
-import { Grid, Button } from "@mui/material";
+import Image from "next/image";
+
+import { Grid, Button, Paper, Typography } from "@mui/material";
 
 export default function SignIn(props) {
   const [config, setConfig] = useState({
     title: "",
     description: "",
-    message: "",
-    signin: "",
-    connect: "",
-    verify: "",
-    verified: "",
+    signedin: "",
   });
 
   const { data: session, status } = useSession();
@@ -32,6 +30,14 @@ export default function SignIn(props) {
   useEffect(() => {
     if (props.config) setConfig(JSON.parse(props.config));
   }, []);
+
+  useEffect(() => {
+    if (status === "authenticated")
+      setTimeout(() => {
+        window.open("", "_parent", "");
+        window.close();
+      }, 1000);
+  }, [status]);
 
   return (
     <ThemeProvider theme={theme}>
@@ -61,40 +67,40 @@ export default function SignIn(props) {
       <CssBaseline enableColorScheme />
 
       <Grid container spacing={2} justifyContent="center" sx={{ mt: 0.125 }}>
-        {status === "unauthenticated" ? (
-          <>
+        <Grid item xs={12} container justifyContent="center">
+          <Image
+            src="/android-chrome-512x512.png"
+            width={256}
+            height={256}
+            alt=""
+          />
+        </Grid>
+
+        <Grid container spacing={2} justifyContent="center" sx={{ mt: 0.125 }}>
+          {status === "unauthenticated" ? (
+            <>
+              <Grid item xs={12} container justifyContent="center">
+                <Button variant="outlined" onClick={() => signIn("discord")}>
+                  {"Connect Discord"}
+                </Button>
+              </Grid>
+              <Grid item xs={12} container justifyContent="center">
+                <Button variant="outlined" onClick={() => signIn("twitch")}>
+                  {"Connect Twitch"}
+                </Button>
+              </Grid>
+            </>
+          ) : (
             <Grid item xs={12} container justifyContent="center">
-              <Button
-                variant="outlined"
-                onClick={() =>
-                  signIn("discord", {
-                    callbackUrl:
-                      process.env.NEXT_PUBLIC_VERCEL_ENV === "production"
-                        ? `https://${process.env.NEXT_PUBLIC_PROD_HOST}/close`
-                        : `http://localhost:3000/close`,
-                  })
-                }
+              <Paper
+                elevation={3}
+                sx={{ p: 2, maxWidth: "256px", backgroundColor: "#4b0082" }}
               >
-                {"Connect Discord"}
-              </Button>
+                <Typography>{config.signedin}</Typography>
+              </Paper>
             </Grid>
-            <Grid item xs={12} container justifyContent="center">
-              <Button
-                variant="outlined"
-                onClick={() =>
-                  signIn("twitch", {
-                    callbackUrl:
-                      process.env.NEXT_PUBLIC_VERCEL_ENV === "production"
-                        ? `https://${process.env.NEXT_PUBLIC_PROD_HOST}/close`
-                        : `http://localhost:3000/close`,
-                  })
-                }
-              >
-                {"Connect Twitch"}
-              </Button>
-            </Grid>
-          </>
-        ) : undefined}
+          )}
+        </Grid>
       </Grid>
     </ThemeProvider>
   );

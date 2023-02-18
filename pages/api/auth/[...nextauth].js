@@ -7,10 +7,12 @@ import clientPromise from "../../../lib/mongodb";
 import crypto from "crypto";
 
 export const authOptions = {
+  // debug: true,
+  pages: { signIn: "/signin" },
   providers: [
     DiscordProvider({
       clientId: process.env.DISCORD_CLIENT_ID,
-      clientSecret: process.env.DISCORD_CLIENT_SECRET
+      clientSecret: process.env.DISCORD_CLIENT_SECRET,
     }),
     TwitchProvider({
       clientId: process.env.TWITCH_CLIENT_ID,

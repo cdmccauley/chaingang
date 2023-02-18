@@ -116,7 +116,7 @@ export default function Home(props) {
     const newWindow = window.open(
       url,
       title,
-      `location=0,toolbar=0,width=500,height=500,top=${top},left=${left}`
+      `location=0,toolbar=0,width=450,height=650,top=${top},left=${left}`
     );
 
     newWindow?.focus();
@@ -203,7 +203,7 @@ export default function Home(props) {
           </Grid>
         ) : undefined}
 
-        {status === "authenticated" ? (
+        {status === "authenticated" && !verified ? (
           <Grid item xs={12} container justifyContent="center">
             <Button
               disabled={props.connecting}
@@ -218,19 +218,20 @@ export default function Home(props) {
         <Grid item xs={12} container justifyContent="center">
           <Button
             variant="outlined"
-            onClick={() =>
-              status === "unauthenticated"
-                ? popupCenter("/signin", "Sign In")
-                : status === "authenticated"
-                ? signOut()
-                : console.error("unexpected error")
-            }
+            onClick={() => {
+              if (status === "unauthenticated") {
+                popupCenter("/signin", "Sign In");
+              } else if (status === "authenticated") {
+                if (wallet) disconnectWallet();
+                signOut();
+              }
+            }}
           >
             {status === "unauthenticated"
               ? "Sign In"
-              : status === "authenticated"
+              : status === "authenticated" && !verified
               ? "Sign Out"
-              : "..."}
+              : "Disconnect"}
           </Button>
         </Grid>
       </Grid>
