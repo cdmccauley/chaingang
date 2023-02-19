@@ -80,17 +80,22 @@ export default function SignIn(props) {
           {status === "unauthenticated" ? (
             <>
               <Grid item xs={12} container justifyContent="center">
-                <Button variant="outlined" onClick={() => signIn("discord")}>
+                <Button variant="outlined" color="secondary" onClick={() => signIn("discord")}>
                   {"Connect Discord"}
                 </Button>
               </Grid>
               <Grid item xs={12} container justifyContent="center">
-                <Button variant="outlined" onClick={() => signIn("twitch")}>
+                <Button variant="outlined" color="secondary" onClick={() => signIn("spotify")}>
+                  {"Connect Spotify"}
+                </Button>
+              </Grid>
+              <Grid item xs={12} container justifyContent="center">
+                <Button variant="outlined" color="secondary" onClick={() => signIn("twitch")}>
                   {"Connect Twitch"}
                 </Button>
               </Grid>
             </>
-          ) : (
+          ) : status === "authenticated" ? (
             <Grid item xs={12} container justifyContent="center">
               <Paper
                 elevation={3}
@@ -99,7 +104,7 @@ export default function SignIn(props) {
                 <Typography>{config.signedin}</Typography>
               </Paper>
             </Grid>
-          )}
+          ) : undefined}
         </Grid>
       </Grid>
     </ThemeProvider>

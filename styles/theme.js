@@ -1,4 +1,3 @@
-import { grey } from "@mui/material/colors";
 import { createTheme } from "@mui/material/styles";
 
 // A custom theme for this app
@@ -22,6 +21,7 @@ const theme = createTheme({
     background: {
       default: "#47236b",
     },
+    secondary: { main: "#fff" },
   },
 });
 

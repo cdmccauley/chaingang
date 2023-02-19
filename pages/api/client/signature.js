@@ -41,7 +41,7 @@ export default async function handler(req, res) {
       if (participant) {
         const serversideprops = await frontend.collection("serversideprops");
         const config = await serversideprops.findOne({ name: "config" });
-        const message = `${config.message}${participant.name}\n${participant.email}\n\n${participant.nonce}`;
+        const message = `${config.message}${participant.session.session.user.name}\n${participant.session.session.user.email}\n\n${participant.nonce}`;
 
         const verified = await verifyMessage({
           signer: req.body.address,
@@ -51,16 +51,18 @@ export default async function handler(req, res) {
         });
 
         if (verified) {
-          await participants.updateOne(
+          const provider = await frontend.collection(
+            participant.signin.account.provider
+          );
+          await provider.updateOne(
             {
-              id: session.id,
-              name: session.session.user.name,
-              email: session.session.user.email,
+              address: req.body.address,
             },
             {
               $set: {
                 address: req.body.address,
-                twitch: session,
+                participant: participant,
+                by: "signature",
                 updated: new Date().valueOf(),
               },
             },

@@ -189,6 +189,7 @@ export default function Home(props) {
           <Grid item xs={12} container justifyContent="center">
             <Button
               variant="outlined"
+              color="secondary"
               onClick={() =>
                 provider.getSigner().then((signer) =>
                   signer
@@ -207,6 +208,7 @@ export default function Home(props) {
           <Grid item xs={12} container justifyContent="center">
             <Button
               disabled={props.connecting}
+              color="secondary"
               variant="outlined"
               onClick={() => (wallet ? disconnectWallet() : connect())}
             >
@@ -218,6 +220,7 @@ export default function Home(props) {
         <Grid item xs={12} container justifyContent="center">
           <Button
             variant="outlined"
+            color="secondary"
             onClick={() => {
               if (status === "unauthenticated") {
                 popupCenter("/signin", "Sign In");
