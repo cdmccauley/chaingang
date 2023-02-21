@@ -18,6 +18,8 @@ import Image from "next/image";
 
 import { Grid, Button, Paper, Typography } from "@mui/material";
 
+import Loading from "../components/index/loading";
+
 export default function SignIn(props) {
   const [config, setConfig] = useState({
     title: "",
@@ -76,66 +78,70 @@ export default function SignIn(props) {
           />
         </Grid>
         <Grid item xs={12} container justifyContent="center">
-          <Paper
-            elevation={3}
-            sx={{
-              p: 2,
-              maxWidth: "256px",
-              backgroundColor: "#4b0082",
-            }}
-          >
-            <Grid container spacing={2} justifyContent="center">
-              {status === "unauthenticated" ? (
-                <>
-                  <Grid
-                    sx={{ mt: 3 }}
-                    item
-                    xs={12}
-                    container
-                    justifyContent="center"
-                  >
-                    <Button
-                      variant="outlined"
-                      color="secondary"
-                      onClick={() => signIn("discord")}
+          {status === "unauthenticated" || status === "authenticated" ? (
+            <Paper
+              elevation={3}
+              sx={{
+                p: 2,
+                maxWidth: "256px",
+                backgroundColor: "#4b0082",
+              }}
+            >
+              <Grid container spacing={2} justifyContent="center">
+                {status === "unauthenticated" ? (
+                  <>
+                    <Grid
+                      sx={{ mt: 3 }}
+                      item
+                      xs={12}
+                      container
+                      justifyContent="center"
                     >
-                      {"Connect Discord"}
-                    </Button>
-                  </Grid>
+                      <Button
+                        variant="outlined"
+                        color="secondary"
+                        onClick={() => signIn("discord")}
+                      >
+                        {"Connect Discord"}
+                      </Button>
+                    </Grid>
+                    <Grid item xs={12} container justifyContent="center">
+                      <Button
+                        variant="outlined"
+                        color="secondary"
+                        onClick={() => signIn("spotify")}
+                      >
+                        {"Connect Spotify"}
+                      </Button>
+                    </Grid>
+                    <Grid
+                      sx={{ mb: 3 }}
+                      item
+                      xs={12}
+                      container
+                      justifyContent="center"
+                    >
+                      <Button
+                        variant="outlined"
+                        color="secondary"
+                        onClick={() => signIn("twitch")}
+                      >
+                        {"Connect Twitch"}
+                      </Button>
+                    </Grid>
+                  </>
+                ) : status === "authenticated" ? (
                   <Grid item xs={12} container justifyContent="center">
-                    <Button
-                      variant="outlined"
-                      color="secondary"
-                      onClick={() => signIn("spotify")}
-                    >
-                      {"Connect Spotify"}
-                    </Button>
+                    <Typography align="center" paragraph>
+                      {config.signedin}
+                    </Typography>
                   </Grid>
-                  <Grid
-                    sx={{ mb: 3 }}
-                    item
-                    xs={12}
-                    container
-                    justifyContent="center"
-                  >
-                    <Button
-                      variant="outlined"
-                      color="secondary"
-                      onClick={() => signIn("twitch")}
-                    >
-                      {"Connect Twitch"}
-                    </Button>
-                  </Grid>
-                </>
-              ) : status === "authenticated" ? (
-                <Grid item xs={12} container justifyContent="center">
-                  <Typography align="center" paragraph>
-                    {config.signedin}
-                  </Typography>
-                </Grid>
-              ) : undefined}
-            </Grid>
-          </Paper>
+                ) : undefined}
+              </Grid>
+            </Paper>
+          ) : (
+            <Loading />
+          )}
         </Grid>
       </Grid>
     </ThemeProvider>

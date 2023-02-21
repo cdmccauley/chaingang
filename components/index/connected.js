@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { Grid, Button, Paper } from "@mui/material";
 
+import Loading from "./loading";
 import Unverified from "./unverified";
 import Verified from "./verified";
 
@@ -34,7 +35,9 @@ export default function Connected({
     }
   }, [signature]);
 
-  return (
+  return signature && !verified ? (
+    <Loading />
+  ) : (
     <Paper
       elevation={3}
       sx={{ p: 2, maxWidth: "256px", backgroundColor: "#4b0082" }}
