@@ -36,7 +36,7 @@ export default function SignIn(props) {
       setTimeout(() => {
         window.open("", "_parent", "");
         window.close();
-      }, 1000);
+      }, 750);
   }, [status]);
 
   return (
@@ -75,36 +75,67 @@ export default function SignIn(props) {
             alt=""
           />
         </Grid>
-
-        <Grid container spacing={2} justifyContent="center" sx={{ mt: 0.125 }}>
-          {status === "unauthenticated" ? (
-            <>
-              <Grid item xs={12} container justifyContent="center">
-                <Button variant="outlined" color="secondary" onClick={() => signIn("discord")}>
-                  {"Connect Discord"}
-                </Button>
-              </Grid>
-              <Grid item xs={12} container justifyContent="center">
-                <Button variant="outlined" color="secondary" onClick={() => signIn("spotify")}>
-                  {"Connect Spotify"}
-                </Button>
-              </Grid>
-              <Grid item xs={12} container justifyContent="center">
-                <Button variant="outlined" color="secondary" onClick={() => signIn("twitch")}>
-                  {"Connect Twitch"}
-                </Button>
-              </Grid>
-            </>
-          ) : status === "authenticated" ? (
-            <Grid item xs={12} container justifyContent="center">
-              <Paper
-                elevation={3}
-                sx={{ p: 2, maxWidth: "256px", backgroundColor: "#4b0082" }}
-              >
-                <Typography>{config.signedin}</Typography>
-              </Paper>
+        <Grid item xs={12} container justifyContent="center">
+          <Paper
+            elevation={3}
+            sx={{
+              p: 2,
+              maxWidth: "256px",
+              backgroundColor: "#4b0082",
+            }}
+          >
+            <Grid container spacing={2} justifyContent="center">
+              {status === "unauthenticated" ? (
+                <>
+                  <Grid
+                    sx={{ mt: 3 }}
+                    item
+                    xs={12}
+                    container
+                    justifyContent="center"
+                  >
+                    <Button
+                      variant="outlined"
+                      color="secondary"
+                      onClick={() => signIn("discord")}
+                    >
+                      {"Connect Discord"}
+                    </Button>
+                  </Grid>
+                  <Grid item xs={12} container justifyContent="center">
+                    <Button
+                      variant="outlined"
+                      color="secondary"
+                      onClick={() => signIn("spotify")}
+                    >
+                      {"Connect Spotify"}
+                    </Button>
+                  </Grid>
+                  <Grid
+                    sx={{ mb: 3 }}
+                    item
+                    xs={12}
+                    container
+                    justifyContent="center"
+                  >
+                    <Button
+                      variant="outlined"
+                      color="secondary"
+                      onClick={() => signIn("twitch")}
+                    >
+                      {"Connect Twitch"}
+                    </Button>
+                  </Grid>
+                </>
+              ) : status === "authenticated" ? (
+                <Grid item xs={12} container justifyContent="center">
+                  <Typography align="center" paragraph>
+                    {config.signedin}
+                  </Typography>
+                </Grid>
+              ) : undefined}
             </Grid>
-          ) : undefined}
+          </Paper>
         </Grid>
       </Grid>
     </ThemeProvider>
