@@ -40,7 +40,7 @@ export default function Connected({
   ) : (
     <Paper
       elevation={3}
-      sx={{ p: 2, maxWidth: "256px", backgroundColor: "#4b0082" }}
+      sx={{ p: 2, maxWidth: "256px" }}
     >
       {verified ? (
         <Verified config={config} />
@@ -54,7 +54,6 @@ export default function Connected({
       <Grid item sx={{ mt: 1.5 }} xs={12} container justifyContent="center">
         <Button
           variant="outlined"
-          color="secondary"
           onClick={() => {
             if (wallet) disconnectWallet();
             signOut();

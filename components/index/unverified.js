@@ -25,7 +25,6 @@ export default function Unverified({ config, provider, setSignature }) {
 
       <Button
         variant="outlined"
-        color="secondary"
         onClick={() =>
           provider.getSigner().then((signer) =>
             signer

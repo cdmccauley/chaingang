@@ -4,7 +4,7 @@ export default function Disconnected({ config, connect, connecting, signOut }) {
   return (
     <Paper
       elevation={3}
-      sx={{ p: 2, maxWidth: "256px", backgroundColor: "#4b0082" }}
+      sx={{ p: 2, maxWidth: "256px" }}
     >
       <Grid item xs={12} container justifyContent="center">
         <Typography align="center" paragraph>
@@ -12,7 +12,6 @@ export default function Disconnected({ config, connect, connecting, signOut }) {
         </Typography>
         <Button
           variant="outlined"
-          color="secondary"
           onClick={() => (!connecting ? connect() : console.log("CONNECTING"))}
         >
           {!connecting ? "Connect Wallet" : "Connecting..."}
@@ -20,7 +19,6 @@ export default function Disconnected({ config, connect, connecting, signOut }) {
         <Button
           sx={{ mt: 1.5 }}
           variant="outlined"
-          color="secondary"
           onClick={() => signOut()}
         >
           Sign Out

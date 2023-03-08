@@ -30,7 +30,7 @@ export default function SignedOut({ config }) {
   return (
     <Paper
       elevation={3}
-      sx={{ p: 2, maxWidth: "256px", backgroundColor: "#4b0082" }}
+      sx={{ p: 2, maxWidth: "256px" }}
     >
       <Grid item xs={12} container justifyContent="center">
         <Typography align="center" paragraph>
@@ -38,7 +38,6 @@ export default function SignedOut({ config }) {
         </Typography>
         <Button
           variant="outlined"
-          color="secondary"
           onClick={() => popupCenter("/signin", "Sign In")}
         >
           {"Sign In"}

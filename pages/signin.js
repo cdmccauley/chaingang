@@ -84,7 +84,6 @@ export default function SignIn(props) {
               sx={{
                 p: 2,
                 maxWidth: "256px",
-                backgroundColor: "#4b0082",
               }}
             >
               <Grid container spacing={2} justifyContent="center">
@@ -99,7 +98,6 @@ export default function SignIn(props) {
                     >
                       <Button
                         variant="outlined"
-                        color="secondary"
                         onClick={() => signIn("discord")}
                       >
                         {"Connect Discord"}
@@ -108,7 +106,6 @@ export default function SignIn(props) {
                     <Grid item xs={12} container justifyContent="center">
                       <Button
                         variant="outlined"
-                        color="secondary"
                         onClick={() => signIn("spotify")}
                       >
                         {"Connect Spotify"}
@@ -123,7 +120,6 @@ export default function SignIn(props) {
                     >
                       <Button
                         variant="outlined"
-                        color="secondary"
                         onClick={() => signIn("twitch")}
                       >
                         {"Connect Twitch"}

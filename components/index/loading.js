@@ -4,11 +4,11 @@ export default function Loading() {
   return (
     <Paper
       elevation={3}
-      sx={{ p: 2, maxWidth: "256px", backgroundColor: "#4b0082" }}
+      sx={{ p: 2, maxWidth: "256px" }}
     >
       <Grid container justifyContent="center">
         <Grid item container justifyContent="center" sx={{ mt: 2 }}>
-          <CircularProgress thickness={5} color="secondary" />
+          <CircularProgress thickness={5} />
         </Grid>
 
         <Grid item container justifyContent="center" sx={{ mt: 2 }}>

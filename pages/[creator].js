@@ -9,7 +9,9 @@ import "@fontsource/roboto/300.css";
 import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
-import theme from "../styles/theme";
+
+import { createTheme } from "@mui/material/styles";
+import { default as defaultTheme } from "../styles/theme";
 
 import clientPromise from "../lib/mongodb";
 
@@ -36,19 +38,27 @@ export default function Home(props) {
 
   const [branding, setBranding] = useState(undefined);
 
+  const [theme, setTheme] = useState(createTheme(defaultTheme));
+
   const { data: session, status } = useSession();
 
   useEffect(() => {
-    if (props.config) setConfig(JSON.parse(props.config));
-    if (props.branding) setBranding(props.branding);
+    if (props?.config) setConfig(JSON.parse(props.config));
+    if (props?.branding) {
+      const branding = JSON.parse(props.branding);
+      setBranding(branding);
+      setTheme(
+        createTheme(branding.name === "default" ? defaultTheme : branding.theme)
+      );
+    }
   }, []);
 
   return (
     <ThemeProvider theme={theme}>
       <Head>
         <title>
-          {branding && branding !== "default"
-            ? `${branding}@${config.title}`
+          {branding && branding.name !== "default"
+            ? `${branding.name}@${config.title}`
             : config.title}
         </title>
         <meta name="description" content={config.description} />
@@ -78,7 +88,7 @@ export default function Home(props) {
         <Grid item xs={12} container justifyContent="center">
           {!branding ? (
             ""
-          ) : branding === "default" ? (
+          ) : branding.name === "default" ? (
             <Image
               src="/android-chrome-512x512.png"
               width={256}
@@ -86,7 +96,7 @@ export default function Home(props) {
               alt=""
             />
           ) : (
-            `${branding}@${config.title}`
+            `${branding.name}@${config.title}`
           )}
         </Grid>
         <Grid item xs={12} container justifyContent="center">
@@ -115,24 +125,44 @@ export async function getServerSideProps(context) {
       name: "server-config",
     });
 
+    const name =
+      context?.query?.creator &&
+      serverConfig?.creators.some(
+        (creator) =>
+          creator.toLowerCase() === context?.query?.creator?.toLowerCase()
+      )
+        ? serverConfig?.creators[
+            serverConfig?.creators.findIndex(
+              (creator) =>
+                creator.toLowerCase() === context?.query?.creator?.toLowerCase()
+            )
+          ]
+        : "default";
+
+    const branding = {
+      name: name,
+      theme:
+        name === "default"
+          ? {
+              palette: {
+                text: {
+                  primary: "#FFFFFF",
+                },
+                background: {
+                  default: "#121212",
+                  paper: "#242424",
+                },
+                primary: { main: "#FFFFFF" },
+              },
+            }
+          : serverConfig.themes[`${name.toLowerCase()}`],
+    };
+
     return {
       props: {
         isConnected: true,
         config: JSON.stringify(config),
-        branding:
-          context?.query?.creator &&
-          serverConfig?.creators.some(
-            (creator) =>
-              creator.toLowerCase() === context?.query?.creator?.toLowerCase()
-          )
-            ? serverConfig?.creators[
-                serverConfig?.creators.findIndex(
-                  (creator) =>
-                    creator.toLowerCase() ===
-                    context?.query?.creator?.toLowerCase()
-                )
-              ]
-            : "default",
+        branding: JSON.stringify(branding),
       },
     };
   } catch (e) {
