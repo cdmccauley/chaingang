@@ -36,7 +36,7 @@ export default function Home(props) {
     signedin: "",
   });
 
-  const [branding, setBranding] = useState(undefined);
+  const [branding, setBranding] = useState({ name: "default" });
 
   const [theme, setTheme] = useState(createTheme(defaultTheme));
 
@@ -66,21 +66,32 @@ export default function Home(props) {
         <link
           rel="apple-touch-icon"
           sizes="180x180"
-          href="/apple-touch-icon.png"
+          href={`${
+            process.env.NEXT_PUBLIC_RESOURCES_ROOT
+          }/public/${branding.name.toLowerCase()}/apple-touch-icon.png`}
         />
         <link
           rel="icon"
           type="image/png"
           sizes="32x32"
-          href="/favicon-32x32.png"
+          href={`${
+            process.env.NEXT_PUBLIC_RESOURCES_ROOT
+          }/public/${branding.name.toLowerCase()}/favicon-32x32.png`}
         />
         <link
           rel="icon"
           type="image/png"
           sizes="16x16"
-          href="/favicon-16x16.png"
+          href={`${
+            process.env.NEXT_PUBLIC_RESOURCES_ROOT
+          }/public/${branding.name.toLowerCase()}/favicon-16x16.png`}
         />
-        <link rel="manifest" href="/site.webmanifest" />
+        <link
+          rel="manifest"
+          href={`${
+            process.env.NEXT_PUBLIC_RESOURCES_ROOT
+          }/public/${branding.name.toLowerCase()}/site.webmanifest`}
+        />
       </Head>
       <CssBaseline enableColorScheme />
 
@@ -88,15 +99,15 @@ export default function Home(props) {
         <Grid item xs={12} container justifyContent="center">
           {!branding ? (
             ""
-          ) : branding.name === "default" ? (
+          ) : (
             <Image
-              src="/android-chrome-512x512.png"
+              src={`${
+                process.env.NEXT_PUBLIC_RESOURCES_ROOT
+              }/public/${branding.name.toLowerCase()}/android-chrome-512x512.png`}
               width={256}
               height={256}
               alt=""
             />
-          ) : (
-            `${branding.name}@${config.title}`
           )}
         </Grid>
         <Grid item xs={12} container justifyContent="center">
