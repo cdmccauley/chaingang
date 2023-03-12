@@ -13,7 +13,17 @@ import theme from "../styles/theme";
 
 import clientPromise from "../lib/mongodb";
 
-import { Grid } from "@mui/material";
+import {
+  Grid,
+  AppBar,
+  Container,
+  Toolbar,
+  Typography,
+  Paper,
+  Avatar,
+} from "@mui/material";
+
+import { AccountBalanceWalletOutlined } from "@mui/icons-material";
 
 import { useSession } from "next-auth/react";
 
@@ -40,6 +50,8 @@ export default function Home(props) {
     if (props.config) setConfig(JSON.parse(props.config));
   }, []);
 
+  const resources = `${process.env.NEXT_PUBLIC_RESOURCES_ROOT}/public/default`;
+
   return (
     <ThemeProvider theme={theme}>
       <Head>
@@ -49,32 +61,56 @@ export default function Home(props) {
         <link
           rel="apple-touch-icon"
           sizes="180x180"
-          href="/apple-touch-icon.png"
+          href={`${resources}/apple-touch-icon.png`}
         />
         <link
           rel="icon"
           type="image/png"
           sizes="32x32"
-          href="/favicon-32x32.png"
+          href={`${resources}/favicon-32x32.png`}
         />
         <link
           rel="icon"
           type="image/png"
           sizes="16x16"
-          href="/favicon-16x16.png"
+          href={`${resources}/favicon-16x16.png`}
         />
-        <link rel="manifest" href="/site.webmanifest" />
+        <link rel="manifest" href={`${resources}/site.webmanifest`} />
       </Head>
       <CssBaseline enableColorScheme />
+      <AppBar color="inherit" position="static">
+        <Container maxWidth="xl">
+          <Toolbar disableGutters>
+            <AccountBalanceWalletOutlined sx={{ mr: 2 }} />
+            <Typography
+              variant="h6"
+              color="primary"
+              noWrap
+              component="a"
+              href="/"
+              sx={{
+                mr: 2,
+                fontFamily: "monospace",
+                fontWeight: 700,
+                letterSpacing: ".2rem",
+                textDecoration: "none",
+              }}
+            >
+              {config?.title ? config.title.toUpperCase() : ""}
+            </Typography>
+          </Toolbar>
+        </Container>
+      </AppBar>
 
       <Grid container spacing={2} justifyContent="center" sx={{ mt: 0.125 }}>
         <Grid item xs={12} container justifyContent="center">
-          <Image
-            src="/android-chrome-512x512.png"
-            width={256}
-            height={256}
-            alt=""
-          />
+          <Paper elevation={2} sx={{ p: 2, width: 256, height: 256 }}>
+            <Avatar
+              sx={{ width: 224, height: 224 }}
+              src={`${resources}/android-chrome-512x512.png`}
+              alt=""
+            />
+          </Paper>
         </Grid>
         <Grid item xs={12} container justifyContent="center">
           {status !== "unauthenticated" && status !== "authenticated" ? (

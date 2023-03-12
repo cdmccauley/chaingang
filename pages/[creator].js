@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 
 import Head from "next/head";
-import Image from "next/image";
 
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -11,11 +10,23 @@ import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 
 import { createTheme } from "@mui/material/styles";
-import { default as defaultTheme } from "../styles/theme";
+import { default as defaultTheme } from "../styles/darktheme";
 
 import clientPromise from "../lib/mongodb";
 
-import { Grid } from "@mui/material";
+import {
+  Grid,
+  Avatar,
+  Paper,
+  Typography,
+  AppBar,
+  Container,
+  Toolbar,
+  Box,
+  CircularProgress,
+} from "@mui/material";
+
+import { AccountBalanceWalletOutlined } from "@mui/icons-material";
 
 import { useSession } from "next-auth/react";
 
@@ -36,7 +47,8 @@ export default function Home(props) {
     signedin: "",
   });
 
-  const [branding, setBranding] = useState({ name: "default" });
+  const [branding, setBranding] = useState({ name: "client" });
+  const [delay, setDelay] = useState(true);
 
   const [theme, setTheme] = useState(createTheme(defaultTheme));
 
@@ -48,66 +60,99 @@ export default function Home(props) {
       const branding = JSON.parse(props.branding);
       setBranding(branding);
       setTheme(
-        createTheme(branding.name === "default" ? defaultTheme : branding.theme)
+        createTheme(branding.name === "client" ? defaultTheme : branding.theme)
       );
+      setTimeout(() => setDelay(false), 1000);
     }
   }, []);
+
+  const resources = `${
+    process.env.NEXT_PUBLIC_RESOURCES_ROOT
+  }/public/${branding.name.toLowerCase()}`;
 
   return (
     <ThemeProvider theme={theme}>
       <Head>
         <title>
-          {branding && branding.name !== "default"
-            ? `${branding.name}@${config.title}`
-            : config.title}
+          {branding?.name == "client" || branding?.name == "default"
+            ? config.title
+            : `${branding.name}@${config.title}`}
         </title>
         <meta name="description" content={config.description} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link
           rel="apple-touch-icon"
           sizes="180x180"
-          href={`${
-            process.env.NEXT_PUBLIC_RESOURCES_ROOT
-          }/public/${branding.name.toLowerCase()}/apple-touch-icon.png`}
+          href={`${resources}/apple-touch-icon.png`}
         />
         <link
           rel="icon"
           type="image/png"
           sizes="32x32"
-          href={`${
-            process.env.NEXT_PUBLIC_RESOURCES_ROOT
-          }/public/${branding.name.toLowerCase()}/favicon-32x32.png`}
+          href={`${resources}/favicon-32x32.png`}
         />
         <link
           rel="icon"
           type="image/png"
           sizes="16x16"
-          href={`${
-            process.env.NEXT_PUBLIC_RESOURCES_ROOT
-          }/public/${branding.name.toLowerCase()}/favicon-16x16.png`}
+          href={`${resources}/favicon-16x16.png`}
         />
-        <link
-          rel="manifest"
-          href={`${
-            process.env.NEXT_PUBLIC_RESOURCES_ROOT
-          }/public/${branding.name.toLowerCase()}/site.webmanifest`}
-        />
+        <link rel="manifest" href={`${resources}/site.webmanifest`} />
       </Head>
       <CssBaseline enableColorScheme />
+      <AppBar color="inherit" position="static">
+        <Container maxWidth="xl">
+          <Toolbar disableGutters>
+            <Box sx={{ flexGrow: 1, display: "flex" }}>
+              <AccountBalanceWalletOutlined sx={{ mr: 2, mt: 0.5 }} />
+              <Typography
+                variant="h6"
+                color="primary"
+                noWrap
+                component="a"
+                href="/"
+                sx={{
+                  mr: 2,
+                  fontFamily: "monospace",
+                  fontWeight: 700,
+                  letterSpacing: ".2rem",
+                  textDecoration: "none",
+                }}
+              >
+                {config?.title ? config.title.toUpperCase() : ""}
+              </Typography>
+            </Box>
+            <Box sx={{ flexGrow: 0 }}>
+              <Typography>
+                {branding && branding.name !== "default"
+                  ? `${branding.name}@${config.title}`
+                  : undefined}
+              </Typography>
+            </Box>
+          </Toolbar>
+        </Container>
+      </AppBar>
 
       <Grid container spacing={2} justifyContent="center" sx={{ mt: 0.125 }}>
         <Grid item xs={12} container justifyContent="center">
           {!branding ? (
             ""
           ) : (
-            <Image
-              src={`${
-                process.env.NEXT_PUBLIC_RESOURCES_ROOT
-              }/public/${branding.name.toLowerCase()}/android-chrome-512x512.png`}
-              width={256}
-              height={256}
-              alt=""
-            />
+            <Grid item xs={12} container justifyContent="center">
+              <Paper elevation={2} sx={{ p: 2, width: 256, height: 256 }}>
+                <Grid item xs={12} container justifyContent="center">
+                  {branding?.name === "default" && delay ? (
+                    <CircularProgress sx={{ mt: 12 }} thickness={5} />
+                  ) : (
+                    <Avatar
+                      sx={{ width: 224, height: 224 }}
+                      src={`${resources}/android-chrome-512x512.png`}
+                      alt=""
+                    />
+                  )}
+                </Grid>
+              </Paper>
+            </Grid>
           )}
         </Grid>
         <Grid item xs={12} container justifyContent="center">
@@ -160,8 +205,8 @@ export async function getServerSideProps(context) {
                   primary: "#FFFFFF",
                 },
                 background: {
-                  default: "#121212",
-                  paper: "#242424",
+                  default: "#3c096c",
+                  paper: "#663399",
                 },
                 primary: { main: "#FFFFFF" },
               },

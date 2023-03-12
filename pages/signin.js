@@ -14,9 +14,19 @@ import clientPromise from "../lib/mongodb";
 
 import { useSession, signIn } from "next-auth/react";
 
-import Image from "next/image";
+import {
+  Grid,
+  Button,
+  Typography,
+  AppBar,
+  Container,
+  Toolbar,
+  Paper,
+  Avatar
+} from "@mui/material";
 
-import { Grid, Button, Paper, Typography } from "@mui/material";
+import { AccountBalanceWalletOutlined } from "@mui/icons-material";
+
 
 import Loading from "../components/index/loading";
 
@@ -40,6 +50,8 @@ export default function SignIn(props) {
         window.close();
       }, 750);
   }, [status]);
+
+  const resources = `${process.env.NEXT_PUBLIC_RESOURCES_ROOT}/public/default`;
 
   return (
     <ThemeProvider theme={theme}>
@@ -67,15 +79,39 @@ export default function SignIn(props) {
         <link rel="manifest" href="/site.webmanifest" />
       </Head>
       <CssBaseline enableColorScheme />
+      <AppBar color="inherit" position="static">
+        <Container maxWidth="xl">
+          <Toolbar disableGutters>
+            <AccountBalanceWalletOutlined sx={{ mr: 2 }} />
+            <Typography
+              variant="h6"
+              color="primary"
+              noWrap
+              component="a"
+              href="/"
+              sx={{
+                mr: 2,
+                fontFamily: "monospace",
+                fontWeight: 700,
+                letterSpacing: ".2rem",
+                textDecoration: "none",
+              }}
+            >
+              {config?.title ? config.title.toUpperCase() : ""}
+            </Typography>
+          </Toolbar>
+        </Container>
+      </AppBar>
 
       <Grid container spacing={2} justifyContent="center" sx={{ mt: 0.125 }}>
         <Grid item xs={12} container justifyContent="center">
-          <Image
-            src="/android-chrome-512x512.png"
-            width={256}
-            height={256}
-            alt=""
-          />
+        <Paper elevation={2} sx={{ p: 2, width: 256, height: 256 }}>
+            <Avatar
+              sx={{ width: 224, height: 224 }}
+              src={`${resources}/android-chrome-512x512.png`}
+              alt=""
+            />
+          </Paper>
         </Grid>
         <Grid item xs={12} container justifyContent="center">
           {status === "unauthenticated" || status === "authenticated" ? (
