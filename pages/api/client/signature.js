@@ -60,10 +60,17 @@ export default async function handler(req, res) {
             },
             {
               $set: {
-                address: req.body.address.toLowerCase(),
-                participant: participant,
+                participant,
                 by: "signature",
                 updated: new Date().valueOf(),
+              },
+              $setOnInsert: {
+                address: req.body.address.toLowerCase(),
+                referrer:
+                  req.headers.origin != req.headers.referer
+                    ? req.headers.referer.replace(`${req.headers.origin}/`, "")
+                    : "",
+                created: new Date().valueOf(),
               },
             },
             { upsert: true }
