@@ -205,8 +205,8 @@ export async function getServerSideProps(context) {
                   primary: "#FFFFFF",
                 },
                 background: {
-                  default: "#3c096c",
-                  paper: "#663399",
+                  default: "#392742",
+                  paper: "#583866",
                 },
                 primary: { main: "#FFFFFF" },
               },
