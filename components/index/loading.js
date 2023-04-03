@@ -4,7 +4,7 @@ export default function Loading() {
   return (
     <Paper
       elevation={3}
-      sx={{ p: 2, maxWidth: "256px" }}
+      sx={{ p: 2, minWidth: "256px" }}
     >
       <Grid container justifyContent="center">
         <Grid item container justifyContent="center" sx={{ mt: 2 }}>
