@@ -2,18 +2,17 @@ import clientPromise from "../../../../../lib/mongodb";
 
 export default async function handler(req, res) {
   const resolves = {
-    BAD_REQUEST: () => res.status(400).json({ status: "BAD_REQUEST" }),
-    UNAUTHORIZED: () => res.status(401).json({ status: "UNAUTHORIZED" }),
-    NOT_FOUND: () => res.status(404).json({ status: "NOT_FOUND" }),
-    INTERNAL_SERVER_ERROR: () =>
-      res.status(500).json({ status: "INTERNAL_SERVER_ERROR" }),
+    BAD_REQUEST: () => res.status(400).send(),
+    UNAUTHORIZED: () => res.status(401).send(),
+    NOT_FOUND: () => res.status(404).send(),
+    INTERNAL_SERVER_ERROR: () => res.status(500).send(),
   };
 
   let resolve = resolves.BAD_REQUEST;
 
   try {
     const limit =
-      req.query.limit && 
+      req.query.limit &&
       Number.isInteger(Number.parseInt(req.query.limit)) &&
       Number.parseInt(req.query.limit) > 0
         ? Number.parseInt(req.query.limit)
@@ -58,7 +57,7 @@ export default async function handler(req, res) {
       const marquee = await marqueeEvents.toArray().then((arr) => arr);
 
       if (marquee && marquee.length > 0) {
-        resolve = () => res.status(200).json({ status: "OK", events: marquee });
+        resolve = () => res.status(200).json({ events: marquee });
       } else {
         resolve = resolves.NOT_FOUND;
       }

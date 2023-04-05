@@ -24,6 +24,7 @@ import {
   Toolbar,
   Box,
   CircularProgress,
+  Slide,
 } from "@mui/material";
 
 import { AccountBalanceWalletOutlined } from "@mui/icons-material";
@@ -33,6 +34,8 @@ import { useSession } from "next-auth/react";
 import Loading from "../components/index/loading";
 import SignedOut from "../components/index/signedout";
 import SignedIn from "../components/index/signedin";
+
+import Marquee from "../components/index/marquee";
 
 export default function Home(props) {
   const [config, setConfig] = useState({
@@ -54,6 +57,8 @@ export default function Home(props) {
 
   const { data: session, status } = useSession();
 
+  const [events, setEvents] = useState(undefined);
+
   useEffect(() => {
     if (props?.config) setConfig(JSON.parse(props.config));
     if (props?.branding) {
@@ -65,6 +70,16 @@ export default function Home(props) {
       setTimeout(() => setDelay(false), 1000);
     }
   }, []);
+
+  useEffect(() => {
+    if (branding?.name !== "client" && branding?.name !== "default")
+      fetch(`/api/client/events/twitch/${branding.name.toLowerCase()}`)
+        .then((res) => (res.ok ? res.json() : undefined))
+        .then((res) => {
+          if (res && res?.events?.length > 0) setEvents(res?.events);
+        })
+        .catch((e) => console.error(e));
+  }, [branding]);
 
   const resources = `${
     process.env.NEXT_PUBLIC_RESOURCES_ROOT
@@ -155,6 +170,16 @@ export default function Home(props) {
             </Grid>
           )}
         </Grid>
+        <Slide
+          direction="up"
+          in={events ? true : false}
+          mountOnEnter
+          unmountOnExit
+        >
+          <Grid item xs={12} container justifyContent="center">
+            <Marquee events={events} />
+          </Grid>
+        </Slide>
         <Grid item xs={12} container justifyContent="center">
           {status !== "unauthenticated" && status !== "authenticated" ? (
             <Loading />
