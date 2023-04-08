@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import Head from "next/head";
 
@@ -23,7 +23,6 @@ import {
   Container,
   Toolbar,
   Box,
-  CircularProgress,
   Slide,
 } from "@mui/material";
 
@@ -38,21 +37,14 @@ import SignedIn from "../components/index/signedin";
 import Marquee from "../components/index/marquee";
 
 export default function Home(props) {
-  const [config, setConfig] = useState({
-    name: "",
-    title: "",
-    description: "",
-    message: "",
-    signin: "",
-    connect: "",
-    verified: "",
-    verify: "",
-    signedin: "",
-  });
+  const [resources, setResources] = useState(
+    `${process.env.NEXT_PUBLIC_RESOURCES_ROOT}/public/client`
+  );
 
-  const [branding, setBranding] = useState({ name: "client" });
-  const [delay, setDelay] = useState(true);
+  const [ready, setReady] = useState(false);
 
+  const [config, setConfig] = useState(undefined);
+  const [branding, setBranding] = useState(undefined);
   const [theme, setTheme] = useState(createTheme(defaultTheme));
 
   const { data: session, status } = useSession();
@@ -60,40 +52,46 @@ export default function Home(props) {
   const [events, setEvents] = useState(undefined);
 
   useEffect(() => {
-    if (props?.config) setConfig(JSON.parse(props.config));
-    if (props?.branding) {
-      const branding = JSON.parse(props.branding);
-      setBranding(branding);
-      setTheme(
-        createTheme(branding.name === "client" ? defaultTheme : branding.theme)
-      );
-      setTimeout(() => setDelay(false), 1000);
-    }
-  }, []);
+    if (!config && props?.config) setConfig(JSON.parse(props.config));
+    if (!branding && props?.branding) setBranding(JSON.parse(props.branding));
+  }, [props]);
 
   useEffect(() => {
-    if (branding?.name !== "client" && branding?.name !== "default")
+    if (branding?.name)
+      setResources(
+        `${
+          process.env.NEXT_PUBLIC_RESOURCES_ROOT
+        }/public/${branding.name.toLowerCase()}`
+      );
+    if (branding?.theme) setTheme(createTheme(branding.theme));
+  }, [branding]);
+
+  useEffect(() => {
+    if (config && branding) setReady(true);
+  }, [config, branding]);
+
+  useEffect(() => {
+    if (ready) {
       fetch(`/api/client/events/twitch/${branding.name.toLowerCase()}`)
         .then((res) => (res.ok ? res.json() : undefined))
         .then((res) => {
           if (res && res?.events?.length > 0) setEvents(res?.events);
         })
         .catch((e) => console.error(e));
-  }, [branding]);
-
-  const resources = `${
-    process.env.NEXT_PUBLIC_RESOURCES_ROOT
-  }/public/${branding.name.toLowerCase()}`;
+    }
+  }, [ready]);
 
   return (
     <ThemeProvider theme={theme}>
       <Head>
         <title>
-          {branding?.name == "client" || branding?.name == "default"
-            ? config.title
-            : `${branding.name}@${config.title}`}
+          {ready
+            ? branding.name !== "default"
+              ? `${branding.name}@${config.title}`
+              : config.title
+            : ""}
         </title>
-        <meta name="description" content={config.description} />
+        <meta name="description" content={config?.description} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link
           rel="apple-touch-icon"
@@ -134,12 +132,12 @@ export default function Home(props) {
                   textDecoration: "none",
                 }}
               >
-                {config?.title ? config.title.toUpperCase() : ""}
+                {ready ? config.title.toUpperCase() : undefined}
               </Typography>
             </Box>
             <Box sx={{ flexGrow: 0 }}>
               <Typography>
-                {branding && branding.name !== "default"
+                {ready && branding.name !== "default"
                   ? `${branding.name}@${config.title}`
                   : undefined}
               </Typography>
@@ -147,49 +145,55 @@ export default function Home(props) {
           </Toolbar>
         </Container>
       </AppBar>
-
-      <Grid container spacing={2} justifyContent="center" sx={{ mt: 0.125 }}>
-        <Grid item xs={12} container justifyContent="center">
-          {!branding ? (
-            ""
-          ) : (
-            <Grid item xs={12} container justifyContent="center">
-              <Paper elevation={2} sx={{ p: 2, width: 256, height: 256 }}>
-                <Grid item xs={12} container justifyContent="center">
-                  {branding?.name === "default" && delay ? (
-                    <CircularProgress sx={{ mt: 12 }} thickness={5} />
-                  ) : (
+      <Grid
+        container
+        spacing={2}
+        justifyContent="center"
+        sx={{ mt: 0.125, pb: 2 }}
+      >
+        <Grid item xs={12} container spacing={2} justifyContent="center">
+          {ready ? (
+            <React.Fragment>
+              <Grid item xs={12} container justifyContent="center">
+                <Paper elevation={2} sx={{ p: 2, width: 256, height: 256 }}>
+                  <Grid item xs={12} container justifyContent="center">
                     <Avatar
                       sx={{ width: 224, height: 224 }}
                       src={`${resources}/android-chrome-512x512.png`}
                       alt=""
                     />
-                  )}
+                  </Grid>
+                </Paper>
+              </Grid>
+
+              <Slide
+                direction="up"
+                in={events ? true : false}
+                mountOnEnter
+                unmountOnExit
+              >
+                <Grid item xs={12} container justifyContent="center">
+                  <Marquee events={events} />
                 </Grid>
-              </Paper>
+              </Slide>
+
+              <Grid item xs={12} container justifyContent="center">
+                {status !== "unauthenticated" && status !== "authenticated" ? (
+                  <Loading />
+                ) : undefined}
+
+                {status === "unauthenticated" ? (
+                  <SignedOut config={config} />
+                ) : status === "authenticated" ? (
+                  <SignedIn config={config} />
+                ) : undefined}
+              </Grid>
+            </React.Fragment>
+          ) : (
+            <Grid item xs={12} container justifyContent="center">
+              <Loading />
             </Grid>
           )}
-        </Grid>
-        <Slide
-          direction="up"
-          in={events ? true : false}
-          mountOnEnter
-          unmountOnExit
-        >
-          <Grid item xs={12} container justifyContent="center">
-            <Marquee events={events} />
-          </Grid>
-        </Slide>
-        <Grid item xs={12} container justifyContent="center">
-          {status !== "unauthenticated" && status !== "authenticated" ? (
-            <Loading />
-          ) : undefined}
-
-          {status === "unauthenticated" ? (
-            <SignedOut config={config} />
-          ) : status === "authenticated" ? (
-            <SignedIn config={config} />
-          ) : undefined}
         </Grid>
       </Grid>
     </ThemeProvider>

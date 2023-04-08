@@ -9,7 +9,7 @@ import crypto from "crypto";
 
 export const authOptions = {
   // debug: true,
-  pages: { signIn: "/signin" },
+  // pages: { signIn: "/signin" },
   providers: [
     DiscordProvider({
       clientId: process.env.DISCORD_CLIENT_ID,

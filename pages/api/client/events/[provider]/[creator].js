@@ -54,7 +54,18 @@ export default async function handler(req, res) {
         )
         .limit(limit);
 
-      const marquee = await marqueeEvents.toArray().then((arr) => arr);
+      const links = {
+        twitch: "https://www.twitch.tv/",
+        discord: "https://www.discord.com/",
+      };
+
+      const marquee = await marqueeEvents.toArray().then((arr) => {
+        arr.forEach((a) => {
+          a.provider = provider;
+          a.link = `${links[`${provider}`]}${a.channel.replace("#", "")}`;
+        });
+        return arr;
+      });
 
       if (marquee && marquee.length > 0) {
         resolve = () => res.status(200).json({ events: marquee });
