@@ -49,11 +49,17 @@ export default async function handler(req, res) {
             }
           );
 
+          console.log(job);
+
           if (job) {
             const root =
               process.env.NEXT_PUBLIC_VERCEL_ENV === "development"
                 ? "http://localhost:3000"
                 : `https://www.${process.env.NEXT_PUBLIC_PROD_HOST}`;
+
+            console.log(
+              `fetching ${root}/api/loopring/holders?nftData=${n}&offset=0`
+            );
 
             job.value.nftDatas.map((n) =>
               fetch(`${root}/api/loopring/holders?nftData=${n}&offset=0`, {
