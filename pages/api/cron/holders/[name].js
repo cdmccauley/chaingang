@@ -55,17 +55,15 @@ export default async function handler(req, res) {
                 ? "http://localhost:3000"
                 : `https://www.${process.env.NEXT_PUBLIC_PROD_HOST}`;
 
-            job.value.nftDatas.forEach((n) =>
-              console.log(`${root}/api/loopring/holders?nftData=${n}&offset=0`)
-            );
-
-            job.value.nftDatas.map((n) =>
-              fetch(`${root}/api/loopring/holders?nftData=${n}&offset=0`, {
-                headers: {
-                  Accept: "application/json",
-                  "X-API-KEY": process.env.LOOPRING_API_KEY,
-                },
-              })
+            await Promise.all(
+              job.value.nftDatas.map((n) =>
+                fetch(`${root}/api/loopring/holders?nftData=${n}&offset=0`, {
+                  headers: {
+                    Accept: "application/json",
+                    "X-API-KEY": process.env.LOOPRING_API_KEY,
+                  },
+                })
+              )
             );
           }
 

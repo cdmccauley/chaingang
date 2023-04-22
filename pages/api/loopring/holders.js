@@ -62,7 +62,7 @@ export default async function handler(req, res) {
             req.query.nftData
           }&offset=${offset + holders?.nftHolders.length}`;
 
-          fetch(nextUrl, {
+          await fetch(nextUrl, {
             headers: {
               Accept: "application/json",
               "X-API-KEY": process.env.LOOPRING_API_KEY,
