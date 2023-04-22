@@ -1,5 +1,15 @@
 {
   "github": {
     "silent": true
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/holders/alona_genesis",
+      "schedule": "15 * * * *"
+    },
+    {
+      "path": "/api/cron/holders/alona_genesis",
+      "schedule": "45 * * * *"
+    }
+  ]
 }
