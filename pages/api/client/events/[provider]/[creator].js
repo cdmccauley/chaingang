@@ -34,24 +34,48 @@ export default async function handler(req, res) {
       const date = new Date();
       const now = date.valueOf();
 
-      const marqueeEvents = await events
-        .find(
-          {
-            "dates.end": { $gt: now },
-            public: true,
+      let doc = {
+        "dates.end": { $gt: now },
+        public: true,
+        marquees: req.query.creator,
+      };
+
+      let pro = {
+        channel: 1,
+        dates: 1,
+        times: 1,
+        cancelled: 1,
+      };
+
+      if (req.headers["x-api-key"]) {
+        const frontend = await mongo.db("frontend");
+        const access = frontend.collection("access");
+
+        const requestor = await access.findOne({
+          key: req.headers["x-api-key"],
+        });
+
+        if (requestor) {
+          doc = {
             marquees: req.query.creator,
-          },
-          {
-            sort: { "dates.end": 1 },
-            projection: {
-              _id: 0,
-              channel: 1,
-              dates: 1,
-              times: 1,
-              cancelled: 1,
-            },
-          }
-        )
+          };
+
+          pro = {
+            channel: 1,
+            dates: 1,
+            times: 1,
+            giveaway: 1,
+            public: 1,
+            cancelled: 1,
+          };
+        }
+      }
+
+      const marqueeEvents = await events
+        .find(doc, {
+          sort: { "dates.end": 1 },
+          projection: pro,
+        })
         .limit(limit);
 
       const links = {

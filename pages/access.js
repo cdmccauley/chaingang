@@ -32,17 +32,27 @@ import Loading from "../components/access/loading";
 import SignedOut from "../components/access/signedout";
 import SignedIn from "../components/access/signedin";
 
+import Events from "../components/access/events";
+
 export default function SignIn(props) {
   const [config, setConfig] = useState({
     title: "",
     description: "",
   });
 
-  const { data: session, status } = useSession();
+  const [features, setFeatures] = useState(undefined);
+
+  const { data: session, status, update: sessionUpdate } = useSession();
 
   useEffect(() => {
     if (props.config) setConfig(JSON.parse(props.config));
   }, []);
+
+  useEffect(() => {
+    if (!features || features.key != session?.features.key) {
+      setFeatures(session?.features);
+    }
+  }, [session]);
 
   const resources = `${process.env.NEXT_PUBLIC_RESOURCES_ROOT}/public/default`;
 
@@ -111,7 +121,9 @@ export default function SignIn(props) {
 
       <Grid container spacing={2} justifyContent="center" sx={{ mt: 0.125 }}>
         <Grid item xs={12} container justifyContent="center">
-          {/* <Loading /> */}
+          {features && features.features.includes("events") ? (
+            <Events config={config} features={features} />
+          ) : undefined}
         </Grid>
       </Grid>
     </ThemeProvider>

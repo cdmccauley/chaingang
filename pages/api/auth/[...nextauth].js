@@ -25,52 +25,52 @@ export const authOptions = {
     }),
   ],
   callbacks: {
-    async signIn(props) {
-      if (props?.user?.id) {
-        const mongo = await clientPromise;
-        const frontend = await mongo.db("frontend");
-        const participants = await frontend.collection("participants");
+    // async signIn(props) {
+    //   if (props?.user?.id) {
+    //     const mongo = await clientPromise;
+    //     const frontend = await mongo.db("frontend");
+    //     const participants = await frontend.collection("participants");
 
-        await participants.updateOne(
-          {
-            sid: props?.user?.id,
-          },
-          {
-            $set: {
-              signin: props,
-              by: "signin",
-              updated: new Date().valueOf(),
-            },
-          },
-          { upsert: true }
-        );
-      }
+    //     await participants.updateOne(
+    //       {
+    //         sid: props?.user?.id,
+    //       },
+    //       {
+    //         $set: {
+    //           signin: props,
+    //           by: "signin",
+    //           updated: new Date().valueOf(),
+    //         },
+    //       },
+    //       { upsert: true }
+    //     );
+    //   }
 
-      return true;
-    },
-    async jwt(props) {
-      if (props?.token?.sub) {
-        const mongo = await clientPromise;
-        const frontend = await mongo.db("frontend");
-        const participants = await frontend.collection("participants");
+    //   return true;
+    // },
+    // async jwt(props) {
+    //   if (props?.token?.sub) {
+    //     const mongo = await clientPromise;
+    //     const frontend = await mongo.db("frontend");
+    //     const participants = await frontend.collection("participants");
 
-        await participants.updateOne(
-          {
-            sid: props.token.sub,
-          },
-          {
-            $set: {
-              jwt: props,
-              by: "jwt",
-              updated: new Date().valueOf(),
-            },
-          },
-          { upsert: true }
-        );
-      }
+    //     await participants.updateOne(
+    //       {
+    //         sid: props.token.sub,
+    //       },
+    //       {
+    //         $set: {
+    //           jwt: props,
+    //           by: "jwt",
+    //           updated: new Date().valueOf(),
+    //         },
+    //       },
+    //       { upsert: true }
+    //     );
+    //   }
 
-      return props.token;
-    },
+    //   return props.token;
+    // },
     async session(props) {
       const mongo = await clientPromise;
       const frontend = await mongo.db("frontend");
@@ -99,10 +99,29 @@ export const authOptions = {
           { upsert: true }
         );
 
+        let feature = undefined;
+
+        if (participant?.access) {
+          const access = await frontend.collection("access");
+          const key = crypto.randomUUID();
+
+          const user = await access.findOneAndUpdate(
+            { sid: props.token.sub },
+            { $set: { key: key } }
+          );
+
+          feature = {
+            key: key,
+            features: user.value.features,
+            configs: user.value.configs,
+          };
+        }
+
         return {
           session: props.session,
           token: props.token,
           id: id,
+          features: feature,
         };
       } else {
         return {

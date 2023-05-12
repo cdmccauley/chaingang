@@ -5,6 +5,9 @@ import { Web3OnboardProvider } from "@web3-onboard/react";
 
 import { SessionProvider } from "next-auth/react";
 
+import { LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+
 export default function App({
   Component,
   pageProps: { session, ...pageProps },
@@ -12,7 +15,9 @@ export default function App({
   return (
     <Web3OnboardProvider web3Onboard={web3Onboard}>
       <SessionProvider session={session}>
-        <Component {...pageProps} />
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <Component {...pageProps} />
+        </LocalizationProvider>
       </SessionProvider>
     </Web3OnboardProvider>
   );
