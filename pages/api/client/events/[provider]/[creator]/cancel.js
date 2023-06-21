@@ -33,9 +33,10 @@ export default async function handler(req, res) {
 
           const events = await provider.collection("events");
 
-          const u = await events.updateOne(
+          await events.updateOne(
             {
               _id: new ObjectId(body._id),
+              marquees: req.query.creator
             },
             {
               $set: {

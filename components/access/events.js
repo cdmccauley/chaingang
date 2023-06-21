@@ -2,22 +2,9 @@ import React, { useEffect, useState } from "react";
 
 import Paper from "@mui/material/Paper";
 import Box from "@mui/material/Box";
-import Select from "@mui/material/Select";
-import MenuItem from "@mui/material/MenuItem";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import FormControl from "@mui/material/FormControl";
-import Checkbox from "@mui/material/Checkbox";
-import InputLabel from "@mui/material/InputLabel";
 import Grid from "@mui/material/Grid";
-import Button from "@mui/material/Button";
-import Snackbar from "@mui/material/Snackbar";
-import MuiAlert from "@mui/material/Alert";
-import TextField from "@mui/material/TextField";
 
 import { DataGrid } from "@mui/x-data-grid";
-
-import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
-import { TimePicker } from "@mui/x-date-pickers";
 
 import Actions from "./actions";
 import Create from "./create";
@@ -27,69 +14,29 @@ var utc = require("dayjs/plugin/utc");
 dayjs.extend(utc);
 
 const columns = [
-  { field: "start", width: 180, headerName: "Event Start" },
-  { field: "end", width: 180, headerName: "Event End" },
-  { field: "days", width: 160, headerName: "Days" },
+  { field: "start", headerName: "Event Start", width: 175 },
+  { field: "end", headerName: "Event End", width: 175 },
+  { field: "days", headerName: "Days", width: 160 },
   {
-    field: "startTime",
-
+    field: "activityStart",
     headerName: "Activity Start",
   },
   {
-    field: "endTime",
-
+    field: "activityEnd",
     headerName: "Activity End",
   },
-  { field: "giveaway", headerName: "Giveaway?" },
-  { field: "public", headerName: "Public?" },
-  { field: "cancelled", headerName: "Cancelled?" },
-  { field: "id", width: 210, headerName: "ID" },
+  { field: "duration", headerName: "Duration", width: 110 },
+  { field: "giveaway", headerName: "Giveaway?", width: 90 },
+  { field: "public", headerName: "Public?", width: 75 },
+  { field: "cancelled", headerName: "Cancelled?", width: 90 },
+  { field: "id", headerName: "ID", width: 225 },
 ];
-
-const Alert = React.forwardRef(function Alert(props, ref) {
-  return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
-});
 
 export default function Events({ config, features }) {
   const [events, setEvents] = useState(undefined);
-
   const [table, setTable] = useState(undefined);
 
-  const [start, setStart] = useState(
-    dayjs()
-      .set("hour", dayjs().get("hour") + 1)
-      .set("minute", 0)
-      .set("second", 0)
-  );
-  const [end, setEnd] = useState(
-    dayjs()
-      .set("day", dayjs().get("day") + 1)
-      .set("hour", dayjs().get("hour") + 1)
-      .set("minute", 0)
-      .set("second", 0)
-  );
-
-  const [startTime, setStartTime] = useState(
-    dayjs()
-      .set("hour", dayjs().get("hour") + 1)
-      .set("minute", 0)
-      .set("second", 0)
-  );
-  const [endTime, setEndTime] = useState(
-    dayjs()
-      .set("hour", dayjs().get("hour") + 1)
-      .set("minute", 0)
-      .set("second", 0)
-  );
-
-  const [days, setDays] = useState(["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]);
-  const [selected, setSelected] = useState([]);
-
-  const [marquee, setMarquee] = useState(false);
-  const [giveaway, setGiveaway] = useState(false);
-
-  const [open, setOpen] = useState(false);
-  const [alert, setAlert] = useState(undefined);
+  const days = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
   const getEvents = async () => {
     await fetch(`/api/client/events/twitch/${features.configs.home}`, {
@@ -100,7 +47,10 @@ export default function Events({ config, features }) {
     })
       .then((res) => (res.ok ? res.json() : undefined))
       .then((res) => {
-        if (res && res?.events?.length > 0) setEvents(res?.events);
+        if (res && res?.events?.length > 0) {
+          setEvents(res?.events);
+          console.log(res?.events);
+        }
       })
       .catch((e) => console.error(e));
   };
@@ -117,39 +67,49 @@ export default function Events({ config, features }) {
         events.map((e) => {
           const date = new Date(e?.dates?.end);
           const end = date.toLocaleString();
-
-          date.setTime(e?.dates?.start);
+          date.setTime(e.dates.start);
           const start = date.toLocaleString();
+          date.setUTCHours(e.hour, e.minute, 0, 0);
+          const location = date.getTimezoneOffset();
+          const activityStart = date.toLocaleTimeString();
+          date.setTime(date.valueOf() + e.duration);
+          const activityEnd = date.toLocaleTimeString();
 
-          const startHour = new Date(
-            date.setUTCHours(e?.times?.start?.hour)
-          ).getHours();
-          const startMinute = new Date(
-            date.setUTCMinutes(e?.times?.start?.minute)
-          ).getMinutes();
-          const endHour = new Date(
-            date.setUTCHours(e?.times?.end?.hour)
-          ).getHours();
-          const endMinute = new Date(
-            date.setUTCMinutes(e?.times?.end?.minute)
-          ).getMinutes();
+          let shift = 0;
+
+          if (location > 0) {
+            if (
+              date.getUTCFullYear() > date.getFullYear() ||
+              date.getUTCMonth() > date.getMonth() ||
+              date.getUTCDate() > date.getDate()
+            )
+              shift = 1;
+          } else if (location < 0) {
+            if (
+              date.getUTCFullYear() < date.getFullYear() ||
+              date.getUTCMonth() < date.getMonth() ||
+              date.getUTCDate() < date.getDate()
+            )
+              shift = -1;
+          }
+
+          let shifted = e.days;
+
+          if (shift < 0) {
+            shifted = e.days.map((d) => (d + 1 > 6 ? 0 + (d + 1 - 7) : d + 1));
+          } else if (shift > 0) {
+            shifted = e.days.map((d) =>
+              d - 1 < 0 ? 7 - Math.abs(d - 1) : d - 1
+            );
+          }
 
           return {
             start: start,
             end: end,
-            days: e?.dates?.days.map((day) => days[day]).toString(),
-            startTime:
-              startHour.toString() +
-              ":" +
-              (startMinute.toString().length > 1
-                ? startMinute.toString()
-                : "0" + startMinute.toString()),
-            endTime:
-              endHour.toString() +
-              ":" +
-              (endMinute.toString().length > 1
-                ? endMinute.toString()
-                : "0" + endMinute.toString()),
+            days: shifted.map((day) => days[day]).toString(),
+            activityStart,
+            activityEnd,
+            duration: `${Math.round(e.duration / 60000)} Minutes`,
             public: e?.public ? "Yes" : "No",
             giveaway: e?.giveaway ? "Yes" : "No",
             cancelled: e?.cancelled ? "Yes" : "No",
@@ -159,79 +119,6 @@ export default function Events({ config, features }) {
       );
     }
   }, [events]);
-
-  useEffect(() => {
-    if (alert) setOpen(true);
-  }, [alert]);
-
-  const handleChange = (event) => {
-    const {
-      target: { value },
-    } = event;
-
-    setSelected(typeof value === "string" ? value.split(",") : value);
-  };
-
-  const handleCreate = (event) => {
-    const date = new Date();
-
-    let sev = "warning";
-    let message = [];
-
-    if (end.valueOf() < start.valueOf()) message = [...message, config.event];
-    if (startTime.valueOf() > endTime.valueOf())
-      message = [...message, config.activity];
-
-    if (selected.length < 1) message = [...message, config.days];
-
-    if (message.length == 0) {
-      sev = "success";
-      message = [config.sent];
-
-      fetch(`/api/client/events/twitch/${features.configs.home}/create`, {
-        method: "POST",
-        headers: {
-          "X-API-KEY": features.key,
-        },
-        body: JSON.stringify({
-          dates: {
-            start: start.valueOf(),
-            end: end.valueOf(),
-            days: selected,
-          },
-          times: {
-            start: {
-              hour: dayjs.utc(startTime).hour(),
-              minute: dayjs.utc(startTime).minute(),
-            },
-            end: {
-              hour: dayjs.utc(endTime).hour(),
-              minute: dayjs.utc(endTime).minute(),
-            },
-          },
-          public: marquee,
-          giveaway: giveaway,
-        }),
-      })
-        .then((res) => {
-          if (res.ok) getEvents();
-        })
-        .catch((e) => console.error(e));
-    }
-
-    setAlert(
-      <Alert onClose={handleClose} severity={sev} sx={{ width: "100%" }}>
-        {message.toString()}
-      </Alert>
-    );
-  };
-
-  const handleClose = (event, reason) => {
-    if (reason === "clickaway") {
-      return;
-    }
-    setOpen(false);
-  };
 
   return (
     <Box sx={{ width: "100vw", ml: 2, mr: 2 }}>

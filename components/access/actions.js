@@ -7,12 +7,14 @@ import TextField from "@mui/material/TextField";
 import MuiAlert from "@mui/material/Alert";
 import Snackbar from "@mui/material/Snackbar";
 
+import Report from "./report";
+
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
 
 export default function Actions({ props }) {
-  const [eventId, setEventId] = useState(undefined);
+  const [eventId, setEventId] = useState("");
 
   const [open, setOpen] = useState(false);
   const [alert, setAlert] = useState(undefined);
@@ -22,10 +24,6 @@ export default function Actions({ props }) {
   useEffect(() => {
     if (alert) setOpen(true);
   }, [alert]);
-
-  useEffect(() => {
-    if (report) console.log("report", report);
-  }, [report]);
 
   const handleClose = (event, reason) => {
     if (reason === "clickaway") {
@@ -82,7 +80,7 @@ export default function Actions({ props }) {
             labelPlacement="start"
             control={
               <TextField
-                sx={{ ml: 2 }}
+                sx={{ ml: 2, width: 415 }}
                 size="small"
                 value={eventId}
                 onChange={(e) => setEventId(e.target.value)}
@@ -110,6 +108,9 @@ export default function Actions({ props }) {
           </Button>
         </Grid>
       </Grid>
+
+      {report ? <Report props={{ config: props.config, report }} /> : undefined}
+
       <Snackbar open={open} autoHideDuration={6000} onClose={handleClose}>
         {alert}
       </Snackbar>

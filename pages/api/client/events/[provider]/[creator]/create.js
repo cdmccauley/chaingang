@@ -1,11 +1,11 @@
 import clientPromise from "../../../../../../lib/mongodb";
-import * as dayjs from "dayjs";
 
 export default async function handler(req, res) {
   const resolves = {
     BAD_REQUEST: () => res.status(400).send(),
     UNAUTHORIZED: () => res.status(401).send(),
     NOT_FOUND: () => res.status(404).send(),
+    CONFLICT: () => res.status(409).send(),
     INTERNAL_SERVER_ERROR: () => res.status(500).send(),
   };
 
@@ -16,23 +16,22 @@ export default async function handler(req, res) {
       const body = JSON.parse(req.body);
 
       if (
-        body?.dates?.start &&
-        body?.dates?.end &&
-        body?.dates?.days &&
-        body?.times?.start &&
-        body?.times?.end &&
-        typeof body?.public == "boolean" &&
-        typeof body?.giveaway == "boolean"
+        (Number.isInteger(body?.dates?.start),
+        Number.isInteger(body?.dates?.end),
+        Number.isInteger(body?.days),
+        Number.isInteger(body?.hour),
+        Number.isInteger(body?.minute),
+        Number.isInteger(body?.duration),
+        typeof body?.public == "boolean" && typeof body?.giveaway == "boolean")
       ) {
+        resolve = resolves.UNAUTHORIZED;
+
         const mongo = await clientPromise;
         const frontend = await mongo.db("frontend");
         const access = frontend.collection("access");
-
         const requestor = await access.findOne({
           key: req.headers["x-api-key"],
         });
-
-        // console.log('pre-create', requestor, req.query)
 
         if (
           requestor &&
@@ -40,68 +39,42 @@ export default async function handler(req, res) {
           ["twitch"].includes(req.query.provider) &&
           requestor?.configs?.home === req.query.creator
         ) {
+          resolve = resolves.CONFLICT;
+
+          console.log("recieved", body.hour, body.minute);
+
           const provider = await mongo.db(req.query.provider);
-
-          //   console.log(dates, body.times, days, body.public, body.giveaway);
-
           const events = await provider.collection("events");
-
           const duplicate = await events.findOne({
             channel: requestor.configs.twitch,
             "dates.start": body.dates.start,
             "dates.end": body.dates.end,
             days: body.days,
+            hour: body.hour,
+            minute: body.minute,
+            duration: body.duration,
             public: body.public,
             giveaway: body.giveaway,
           });
 
           if (!duplicate) {
-            let diff = undefined;
-
-            if (body.giveaway) {
-              const startdate = new Date(body.dates.start);
-              const starttime = startdate.setUTCHours(
-                body.times.start.hour,
-                body.times.start.minute,
-                0,
-                0
-              );
-              const endtime = startdate.setUTCHours(
-                body.times.end.hour,
-                body.times.end.minute,
-                0,
-                0
-              );
-              diff = endtime - starttime;
-            }
-
-            console.log(diff);
+            resolve = resolves.INTERNAL_SERVER_ERROR;
 
             await events.insertOne({
               channel: requestor.configs[`${req.query.provider}`],
-              type: "dashboard",
               dates: {
                 start: body.dates.start,
                 end: body.dates.end,
-                days: body.dates.days.map((d) =>
-                  ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].indexOf(d)
-                ),
               },
-              times: {
-                start: {
-                  hour: body.times.start.hour,
-                  minute: body.times.start.minute,
-                },
-                end: {
-                  hour: body.times.end.hour,
-                  minute: body.times.end.minute,
-                },
-              },
+              days: body.days,
+              hour: body.hour,
+              minute: body.minute,
+              duration: body.duration - 1,
               cancelled: false,
               creator: "dashboard",
               created: new Date().valueOf(),
               modifier: 1.0,
-              cooldown: body.giveaway ? diff : 60000,
+              cooldown: body.giveaway ? body.duration - 1 : 60000,
               public: body.public,
               marquees: [requestor.configs.home],
               giveaway: body.giveaway,

@@ -43,8 +43,10 @@ export default async function handler(req, res) {
       let pro = {
         channel: 1,
         dates: 1,
-        times: 1,
-        cancelled: 1,
+        days: 1,
+        hour: 1,
+        minute: 1,
+        duration: 1,
       };
 
       if (req.headers["x-api-key"]) {
@@ -62,11 +64,14 @@ export default async function handler(req, res) {
 
           pro = {
             channel: 1,
+            cancelled: 1,
             dates: 1,
-            times: 1,
+            days: 1,
+            hour: 1,
+            minute: 1,
+            duration: 1,
             giveaway: 1,
             public: 1,
-            cancelled: 1,
           };
         }
       }

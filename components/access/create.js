@@ -13,6 +13,7 @@ import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { TimePicker } from "@mui/x-date-pickers";
 
 import * as dayjs from "dayjs";
+import { TextField } from "@mui/material";
 var utc = require("dayjs/plugin/utc");
 dayjs.extend(utc);
 
@@ -26,6 +27,7 @@ export default function Create({ props }) {
       .set("hour", dayjs().get("hour") + 1)
       .set("minute", 0)
       .set("second", 0)
+      .set("millisecond", 0)
   );
   const [end, setEnd] = useState(
     dayjs()
@@ -33,6 +35,7 @@ export default function Create({ props }) {
       .set("hour", dayjs().get("hour") + 1)
       .set("minute", 0)
       .set("second", 0)
+      .set("millisecond", 0)
   );
 
   const [startTime, setStartTime] = useState(
@@ -40,17 +43,11 @@ export default function Create({ props }) {
       .set("hour", dayjs().get("hour") + 1)
       .set("minute", 0)
       .set("second", 0)
+      .set("millisecond", 0)
   );
-  const [endTime, setEndTime] = useState(
-    dayjs()
-      .set("hour", dayjs().get("hour") + 1)
-      .set("minute", 0)
-      .set("second", 0)
-  );
-
-  const [selected, setSelected] = useState([]);
-
-  const [marquee, setMarquee] = useState(false);
+  const [duration, setDuration] = useState(60);
+  const [selected, setSelected] = useState([]); // days
+  const [marquee, setMarquee] = useState(false); // public
   const [giveaway, setGiveaway] = useState(false);
 
   const [open, setOpen] = useState(false);
@@ -68,13 +65,37 @@ export default function Create({ props }) {
     setSelected(typeof value === "string" ? value.split(",") : value);
   };
 
+  const handleDuration = (event) => {
+    const {
+      target: { value },
+    } = event;
+
+    const num = typeof value === "string" ? value.split(",") : value;
+
+    setDuration(
+      Number.parseInt(num) < 1
+        ? 1
+        : Number.parseInt(num) > 1440
+        ? 1440
+        : Number.parseInt(num)
+    );
+  };
+
   const handleCreate = (event) => {
     let sev = "warning";
     let message = [];
 
-    if (end.valueOf() < start.valueOf())
+    if (
+      end.valueOf() <= start.valueOf() ||
+      end.valueOf() <
+        dayjs(start)
+          .set("minute", dayjs(start).get("minute") + duration)
+          .set("second", 0)
+          .set("millisecond", 0)
+    )
       message = [...message, props.config.event];
-    if (startTime.valueOf() > endTime.valueOf())
+
+    if (duration < 1 || duration > 1440)
       message = [...message, props.config.activity];
 
     if (selected.length < 1) message = [...message, props.config.days];
@@ -82,6 +103,56 @@ export default function Create({ props }) {
     if (message.length == 0) {
       sev = "success";
       message = [props.config.sent];
+
+      const date = new Date();
+      const location = date.getTimezoneOffset();
+
+      date.setTime(start.valueOf());
+      date.setHours(dayjs(startTime).hour(), dayjs(startTime).minute());
+
+      let days = 0;
+      if (!selected.includes(date.getDay())) {
+        const current = selected.sort().find((v) => v > date.getDay());
+        if (current) {
+          days = current - date.getDay();
+        } else {
+          const next = selected
+            .sort()
+            .reverse()
+            .find((v) => v < date.getDay());
+          days = 6 - date.getDay() + next + 1;
+        }
+      }
+
+      date.setDate(date.getDate() + days);
+
+      let shift = 0;
+
+      if (location > 0) {
+        if (
+          date.getUTCFullYear() > date.getFullYear() ||
+          date.getUTCMonth() > date.getMonth() ||
+          date.getUTCDate() > date.getDate()
+        )
+          shift = 1;
+      } else if (location < 0) {
+        if (
+          date.getUTCFullYear() < date.getFullYear() ||
+          date.getUTCMonth() < date.getMonth() ||
+          date.getUTCDate() < date.getDate()
+        )
+          shift = -1;
+      }
+
+      let shifted = selected;
+
+      if (shift < 0) {
+        shifted = selected.map((d) =>
+          d - 1 < 0 ? 7 - Math.abs(d - 1) : d - 1
+        );
+      } else if (shift > 0) {
+        shifted = selected.map((d) => (d + 1 > 6 ? 0 + (d + 1 - 7) : d + 1));
+      }
 
       fetch(`/api/client/events/twitch/${props.features.configs.home}/create`, {
         method: "POST",
@@ -92,18 +163,11 @@ export default function Create({ props }) {
           dates: {
             start: start.valueOf(),
             end: end.valueOf(),
-            days: selected,
           },
-          times: {
-            start: {
-              hour: dayjs.utc(startTime).hour(),
-              minute: dayjs.utc(startTime).minute(),
-            },
-            end: {
-              hour: dayjs.utc(endTime).hour(),
-              minute: dayjs.utc(endTime).minute(),
-            },
-          },
+          days: shifted.sort(),
+          hour: dayjs.utc(startTime).hour(),
+          minute: dayjs.utc(startTime).minute(),
+          duration: duration * 60000,
           public: marquee,
           giveaway: giveaway,
         }),
@@ -157,7 +221,10 @@ export default function Create({ props }) {
                 sx={{ ml: 3.7 }}
                 disablePast
                 onChange={(v) => setEnd(v)}
-                minDateTime={dayjs(start)}
+                minDateTime={dayjs(start)
+                  .set("minute", dayjs(start).get("minute") + duration)
+                  .set("second", 0)
+                  .set("millisecond", 0)}
                 defaultValue={end}
               />
             }
@@ -186,14 +253,14 @@ export default function Create({ props }) {
             sx={{ ml: 3 }}
             labelPlacement="start"
             control={
-              <TimePicker
-                sx={{ ml: 2 }}
-                onChange={(v) => setEndTime(v)}
-                minTime={dayjs(startTime)}
-                defaultValue={dayjs(start)}
+              <TextField
+                sx={{ ml: 2, maxWidth: 214 }}
+                type="number"
+                value={duration}
+                onChange={handleDuration}
               />
             }
-            label="Activity End"
+            label="Duration (Minutes)"
           />
         </Grid>
       </Grid>
@@ -209,8 +276,8 @@ export default function Create({ props }) {
                 value={selected}
                 onChange={handleChange}
               >
-                {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
-                  <MenuItem key={d} value={d}>
+                {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d, i) => (
+                  <MenuItem key={d} value={i}>
                     {d}
                   </MenuItem>
                 ))}
