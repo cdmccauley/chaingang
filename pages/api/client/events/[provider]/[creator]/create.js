@@ -60,6 +60,7 @@ export default async function handler(req, res) {
 
             await events.insertOne({
               channel: requestor.configs[`${req.query.provider}`],
+              home: requestor.configs.home,
               dates: {
                 start: body.dates.start,
                 end: body.dates.end,
