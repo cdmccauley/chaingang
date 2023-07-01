@@ -41,8 +41,6 @@ export default async function handler(req, res) {
         ) {
           resolve = resolves.CONFLICT;
 
-          console.log("recieved", body.hour, body.minute);
-
           const provider = await mongo.db(req.query.provider);
           const events = await provider.collection("events");
           const duplicate = await events.findOne({

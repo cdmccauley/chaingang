@@ -1,4 +1,3 @@
-import { duration } from "@mui/material";
 import clientPromise from "../../../../../../lib/mongodb";
 
 import { ObjectId } from "mongodb";
@@ -29,7 +28,8 @@ export default async function handler(req, res) {
           requestor &&
           requestor?.features.includes("events") &&
           ["twitch"].includes(req?.query?.provider) &&
-          requestor?.configs?.home === req.query?.creator
+          (requestor?.configs?.home === req.query?.creator ||
+            requestor?.configs?.home === "admin")
         ) {
           const provider = await mongo.db(req?.query?.provider);
           const events = await provider.collection("events");
@@ -41,16 +41,11 @@ export default async function handler(req, res) {
 
           if (event) {
             if (event.giveaway) {
-              // start checking today
               const date = new Date();
               const now = date.valueOf();
               const start = date.setUTCHours(event.hour, event.minute, 0, 0);
               const day = date.getUTCDay();
               const end = date.setTime(start + event.duration);
-
-              console.log("utc now", new Date().toUTCString());
-              console.log("utc day", day);
-              console.log("utc start if today", new Date(start).toUTCString());
 
               const sorted = event.days.sort().reverse();
 
@@ -58,7 +53,6 @@ export default async function handler(req, res) {
 
               if (start >= event.dates.start && sorted.includes(day)) {
                 if (now >= end) {
-                  console.log("ended today");
                   reporting = end;
                 }
               }
@@ -69,10 +63,8 @@ export default async function handler(req, res) {
 
                 if (last >= 0) {
                   move = day - last;
-                  console.log("ended earlier this week", move);
                 } else {
                   move = day + (7 - sorted[0]);
-                  console.log("ended last week", move);
                 }
 
                 date.setTime(start);
@@ -87,10 +79,8 @@ export default async function handler(req, res) {
 
                 if (another >= 0) {
                   distance = landed - another;
-                  console.log("ended earlier this week the sequel", distance);
                 } else {
                   distance = day + (7 - sorted[0]);
-                  console.log("ended last week the sequel", distance);
                 }
 
                 reporting = date.setUTCDate(date.getUTCDate() - distance);
@@ -104,102 +94,53 @@ export default async function handler(req, res) {
 
               if (now >= starting) {
                 if (sorted.includes(initial)) {
-                  console.log("happened on start");
                   threshold = date.setTime(starting + event.duration);
                 } else {
                   const later = sorted.reverse().find((d) => d > initial);
                   let slide;
                   if (later >= 0) {
-                    console.log("happened same week as start");
                     slide = later - initial;
                   } else {
-                    console.log("happened week after start");
                     slide = sorted.reverse()[0] + 7 - initial;
                   }
                   threshold = date.setUTCDate(date.getUTCDate() + slide);
                 }
               }
 
-              console.log("threshold utc", new Date(threshold).toUTCString());
-              console.log("threshold", new Date(threshold).toString());
+              if (threshold && reporting >= threshold) {
+                date.setTime(event.dates.end);
+                const maxStart = date.setUTCHours(
+                  event.hour,
+                  event.minute,
+                  0,
+                  0
+                );
+                const maxStartDay = date.getUTCDay();
+                const ending = date.setTime(maxStart + event.duration);
 
-              if (threshold && reporting >= threshold) { // reporting is after first start
-                console.log("// reporting //");
+                let lastReporting;
 
-                console.log("utc", new Date(reporting).toUTCString());
-                console.log(new Date(reporting).toString());
-              }
+                if (sorted.includes(maxStartDay) && ending <= event.dates.end) {
+                  lastReporting = ending;
+                } else {
+                  const weekOfMax = sorted.find((d) => d < maxStartDay);
+                  let change = 0;
+                  if (weekOfMax >= 0) {
+                    change = maxStartDay - weekOfMax;
+                  } else {
+                    change = maxStartDay + (7 - sorted.reverse()[0]);
+                  }
+                  lastReporting = date.setUTCDate(date.getUTCDate() - change);
+                }
 
-              ////
+                let reportDate;
 
-              // start checking yesterday
-              // date.setTime(now);
-              // date.setUTCDate(date.getUTCDate() - 1);
-              // const yesterday = date.getUTCDay();
+                if (reporting <= lastReporting) {
+                  reportDate = reporting;
+                } else {
+                  reportDate = lastReporting;
+                }
 
-              // if (sorted.includes(yesterday)) {
-              //   const yesterdayStart = date.setUTCHours(
-              //     event.hour,
-              //     event.minute,
-              //     0,
-              //     0
-              //   );
-              //   const yesterdayEnd = date.setTime(
-              //     yesterdayStart + event.duration
-              //   );
-
-              //   if (yesterdayStart >= event.dates.start) {
-              //     if (now >= yesterdayStart && now <= yesterdayEnd) {
-              //       // started yesterday, happening now
-              //       // need to keep going backward
-              //     } else if (now >= yesterdayEnd) {
-              //       // yesterdayEnd could be last event
-              //     }
-              //   }
-              // }
-
-              // done checking yesterday?
-
-              // let lastDay;
-              // let diff;
-
-              // const afterEnd = now >= end;
-              // const today = sorted.includes(day);
-
-              // if (afterEnd && today) {
-              //   diff = 0;
-              // } else {
-              //   if (today) {
-              //     lastDay = sorted.find((d) => d < day);
-              //     diff = day - lastDay;
-              //   } else {
-              //     lastDay = sorted[0];
-              //     diff = 6 - (lastDay - day - 1);
-              //   }
-              // }
-
-              // const reportDate = date.setUTCDate(date.getUTCDate() - diff);
-
-              //
-
-              date.setTime(event.dates.start);
-              const begin = date.setUTCHours(event.hour, event.minute, 0, 0);
-              const on = date.getUTCDay();
-              let finish = date.setTime(begin + event.duration);
-              let reportable = false;
-
-              // if (now >= finish && sorted.includes(on)) {
-              //   reportable = true;
-              // } else {
-              //   const next = sorted.reverse().find((d) => d > on);
-              //   finish = date.setDate(date.getDate() + next - on);
-
-              //   if (now >= finish) {
-              //     reportable = true;
-              //   }
-              // }
-
-              if (reportable) {
                 const reports = await provider.collection("reports");
                 const report = await reports.findOne({
                   event_id: event._id.toString(),
@@ -268,7 +209,17 @@ export default async function handler(req, res) {
                     )
                     .toArray();
                   if (fullReport) {
-                    // TODO: set all chatter points for event to 0
+                    await chatters.updateMany(
+                      {
+                        [`points.${event._id.toString()}`]: { $gt: 0 },
+                      },
+                      {
+                        $unset: {
+                          [`points.${event._id.toString()}`]: "",
+                          [`updated.${event._id.toString()}`]: "",
+                        },
+                      }
+                    );
                     resolve = () => res.status(200).json(fullReport);
                   }
                 }

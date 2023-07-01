@@ -47,10 +47,7 @@ export default function Events({ config, features }) {
     })
       .then((res) => (res.ok ? res.json() : undefined))
       .then((res) => {
-        if (res && res?.events?.length > 0) {
-          setEvents(res?.events);
-          console.log(res?.events);
-        }
+        if (res && res?.events?.length > 0) setEvents(res?.events);
       })
       .catch((e) => console.error(e));
   };
