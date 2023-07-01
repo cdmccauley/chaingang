@@ -43,9 +43,9 @@ export default function Report({ props }) {
           {props?.report && props.report?.length > 0 && props.report[0]?.end ? (
             props?.report
               .sort((a, b) => b.end - a.end)
-              .map((report) =>
+              .map((report, i) =>
                 report?.ranks && report.ranks.length > 0 ? (
-                  <Box sx={{ mb: 2 }}>
+                  <Box key={i} sx={{ mb: 2 }}>
                     <Typography>
                       {new Date(report.end).toLocaleString()}
                     </Typography>
@@ -59,7 +59,9 @@ export default function Report({ props }) {
                         },
                       }}
                       pageSizeOptions={[10]}
-                      rows={Array.from(report.ranks).sort((a, b) => a.rank - b.rank)}
+                      rows={Array.from(report.ranks).sort(
+                        (a, b) => a.rank - b.rank
+                      )}
                       columns={rankColumns}
                       sx={{ mt: 2, mb: 2 }}
                     />
@@ -76,7 +78,9 @@ export default function Report({ props }) {
                 },
               }}
               pageSizeOptions={[10]}
-              rows={Array.from(props.report).sort((a, b) => b.points - a.points)}
+              rows={Array.from(props.report).sort(
+                (a, b) => b.points - a.points
+              )}
               columns={pointColumns}
               sx={{ mt: 2, mb: 2 }}
             />
