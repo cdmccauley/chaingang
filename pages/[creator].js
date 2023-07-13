@@ -173,7 +173,7 @@ export default function Home(props) {
                 unmountOnExit
               >
                 <Grid item xs={12} container justifyContent="center">
-                  <Marquee events={events} />
+                  {/* <Marquee events={events} /> */}
                 </Grid>
               </Slide>
 
