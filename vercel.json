@@ -10,6 +10,14 @@
     {
       "path": "/api/cron/holders/alona_genesis",
       "schedule": "45 * * * *"
+    },
+    {
+      "path": "/api/cron/holders/alona_genesis",
+      "schedule": "00 * * * *"
+    },
+    {
+      "path": "/api/cron/holders/h4sr_joystick",
+      "schedule": "00 * * * *"
     }
   ]
 }
