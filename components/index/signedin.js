@@ -1,18 +1,30 @@
 import { useEffect, useState } from "react";
 
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 
 import { useConnectWallet, useAccountCenter } from "@web3-onboard/react";
 import { ethers } from "ethers";
 
+import Grid from "@mui/material/Grid";
+
 import Connected from "./connected";
 import Disconnected from "./disconnected";
+import Assets from "./assets";
 
 export default function SignedIn({ config }) {
   const [{ wallet, connecting }, connect, disconnect] = useConnectWallet();
   const updateAccountCenter = useAccountCenter();
 
   const [provider, setProvider] = useState(null);
+
+  // gating
+
+  const [loaded, setLoaded] = useState(false);
+  const { data: session, status } = useSession();
+  const [serverState, setServerState] = useState();
+  const [assets, setAssets] = useState();
+
+  // end gating
 
   const disconnectWallet = () => {
     if (wallet) disconnect(wallet);
@@ -21,6 +33,7 @@ export default function SignedIn({ config }) {
 
   useEffect(() => {
     updateAccountCenter({ enabled: false });
+    if (!loaded) setLoaded(true); // gating
   }, []);
 
   useEffect(() => {
@@ -35,8 +48,54 @@ export default function SignedIn({ config }) {
     }
   }, [wallet]);
 
+  // gating
+
+  useEffect(() => {
+    if (session && !loaded && !serverState) {
+      // first encounter
+      setServerState({
+        prior: [],
+        current: session?.assets
+          ?.map((a) => (a?.ruleName ? a : undefined))
+          .filter((a) => a)
+          .sort(),
+      });
+    } else if (session && loaded) {
+      // session refresh
+      const last = serverState?.current;
+      const next = session?.assets
+        ?.map((a) => (a?.ruleName ? a : undefined))
+        .filter((a) => a)
+        .sort();
+      setServerState({
+        prior: last,
+        current: next,
+      });
+    }
+  }, [session]);
+
+  useEffect(() => {
+    if (serverState) {
+      if (
+        (serverState?.prior?.length == 0 && serverState?.current?.length > 0) ||
+        (serverState?.prior?.length > 0 &&
+          JSON.stringify(serverState?.prior) !=
+            JSON.stringify(serverState?.current))
+      ) {
+        setAssets(serverState?.current);
+      }
+    }
+  }, [serverState]);
+
+  // end gating
+
   return (
     <>
+      {assets?.length > 0 ? (
+        <Grid item sx={{ mb: 2 }} xs={12} container justifyContent="center">
+          <Assets assets={assets} />
+        </Grid>
+      ) : undefined}
       {wallet ? (
         <Connected
           config={config}

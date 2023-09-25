@@ -99,6 +99,48 @@ export const authOptions = {
           { upsert: true }
         );
 
+        // gating
+
+        let assets = [];
+        let links = [];
+
+        const date = new Date();
+
+        if (participant) {
+          if (
+            !participant?.updates?.assets_update?.epoch ||
+            participant?.updates?.assets_update?.epoch <=
+              date.valueOf() - 1800000
+          ) {
+            const root =
+              process.env.NEXT_PUBLIC_VERCEL_ENV === "development"
+                ? "http://localhost:3000"
+                : `https://www.${process.env.NEXT_PUBLIC_PROD_HOST}`;
+
+            const url = `${root}/api/client/assets/update/${participant.sid}`;
+
+            await fetch(url, {
+              method: "GET",
+              headers: {
+                "X-API-KEY": process.env.LOOPRING_API_KEY,
+              },
+            });
+          } else {
+            if (participant?.unlocks && participant?.unlocks?.length > 0) {
+              assets = participant?.unlocks
+                ?.map((u) => {
+                  if (u.type == "file") return u;
+                })
+                .filter((u) => u);
+            }
+            if (participant?.files && participant?.files?.length > 0) {
+              links = participant.files;
+            }
+          }
+        }
+
+        // end gating
+
         let feature = undefined;
 
         if (participant?.access) {
@@ -122,6 +164,8 @@ export const authOptions = {
           token: props.token,
           id: id,
           features: feature,
+          links: links,
+          assets: assets,
         };
       } else {
         return {

@@ -11,6 +11,22 @@ const theme = createTheme({
     },
     primary: { main: "#FFFFFF" },
   },
+  components: {
+    MuiInputLabel: {
+      styleOverrides: {
+        root: {
+          color: "#FFF",
+        },
+      },
+    },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        notchedOutline: {
+          borderColor: "#FFF",
+        },
+      },
+    },
+  },
 });
 
 export default theme;

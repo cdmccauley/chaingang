@@ -35,13 +35,27 @@ export default function Connected({
     }
   }, [signature]);
 
+  // gating
+
+  useEffect(() => {
+    if (verified) {
+      const event = new Event("visibilitychange");
+      document.dispatchEvent(event);
+
+      // needs a second refresh for some reason?
+      setTimeout(() => {
+        const event = new Event("visibilitychange");
+        document.dispatchEvent(event);
+      }, 3000);
+    }
+  }, [verified]);
+
+  // end gating
+
   return signature && !verified ? (
     <Loading />
   ) : (
-    <Paper
-      elevation={3}
-      sx={{ p: 2, maxWidth: "256px" }}
-    >
+    <Paper elevation={3} sx={{ p: 2, maxWidth: "256px" }}>
       {verified ? (
         <Verified config={config} />
       ) : (

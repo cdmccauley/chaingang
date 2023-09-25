@@ -1,4 +1,5 @@
 import clientPromise from "../../../lib/mongodb";
+import { ObjectId } from "mongodb";
 
 import { isAddress } from "ethers";
 
@@ -51,6 +52,15 @@ export default async function handler(req, res) {
         });
 
         if (verified) {
+          // gating
+
+          await participants.updateOne(
+            { _id: ObjectId(participant._id) },
+            { $set: { "updates.assets_update": 0 } }
+          );
+
+          // end gating
+
           const provider = await frontend.collection(
             participant.signin.account.provider
           );
