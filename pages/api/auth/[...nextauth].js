@@ -25,29 +25,29 @@ export const authOptions = {
     }),
   ],
   callbacks: {
-    // async signIn(props) {
-    //   if (props?.user?.id) {
-    //     const mongo = await clientPromise;
-    //     const frontend = await mongo.db("frontend");
-    //     const participants = await frontend.collection("participants");
+    async signIn(props) {
+      if (props?.user?.id) {
+        const mongo = await clientPromise;
+        const frontend = await mongo.db("frontend");
+        const participants = await frontend.collection("participants");
 
-    //     await participants.updateOne(
-    //       {
-    //         sid: props?.user?.id,
-    //       },
-    //       {
-    //         $set: {
-    //           signin: props,
-    //           by: "signin",
-    //           updated: new Date().valueOf(),
-    //         },
-    //       },
-    //       { upsert: true }
-    //     );
-    //   }
+        await participants.updateOne(
+          {
+            sid: props?.user?.id,
+          },
+          {
+            $set: {
+              signin: props,
+              by: "signin",
+              updated: new Date().valueOf(),
+            },
+          },
+          { upsert: true }
+        );
+      }
 
-    //   return true;
-    // },
+      return true;
+    },
     // async jwt(props) {
     //   if (props?.token?.sub) {
     //     const mongo = await clientPromise;
