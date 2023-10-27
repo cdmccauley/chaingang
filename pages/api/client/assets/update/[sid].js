@@ -45,7 +45,7 @@ export default async function handler(req, res) {
             { "participant.sid": sid },
             {
               sort: { updated: -1 },
-              projection: { _id: 0, address: 1, accountId: 1 },
+              projection: { _id: 0, address: 1 },
             }
           )
           .limit(1)
@@ -58,7 +58,7 @@ export default async function handler(req, res) {
               { "participant.sid": sid },
               {
                 sort: { updated: -1 },
-                projection: { _id: 0, address: 1, accountId: 1 },
+                projection: { _id: 0, address: 1 },
               }
             )
             .limit(1)
@@ -72,7 +72,7 @@ export default async function handler(req, res) {
               { "participant.sid": sid },
               {
                 sort: { updated: -1 },
-                projection: { _id: 0, address: 1, accountId: 1 },
+                projection: { _id: 0, address: 1 },
               }
             )
             .limit(1)
@@ -223,9 +223,12 @@ export default async function handler(req, res) {
           {
             $set: {
               unlocks: unlocks,
-              "updates.assets_update": {
-                utc: date.toUTCString(),
-                epoch: date.valueOf(),
+              updates: {
+                assets_update: {
+                  utc: date.toUTCString(),
+                  epoch: date.valueOf(),
+                },
+                asset_get: {},
               },
               files: [],
             },
